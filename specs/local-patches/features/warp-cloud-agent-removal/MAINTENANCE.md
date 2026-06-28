@@ -2,9 +2,142 @@
 
 ## 目前分支脈絡
 
-- Working branch：`strip-warp-cloud-agent`
-- Base branch：`ime-stable-20260603-pr10122`
+- Working branch：`local/feature/warp-cloud-agent-removal`
+- 歷史建議分支：`strip-warp-cloud-agent`，此分支基於舊 IME 基底，勿直接 merge 回目前 `master`。
+- Base branch：目前從 `master` 開新分支；IME 與 Windows build 文件已在 `master` 整合。
 - 目前官方 stable base：`v0.2026.06.03.09.49.stable_00`
+
+## 2026-06-28 重新盤點
+
+本盤點基於 `master` 的 `1be263b3` 之後開出的
+`local/feature/warp-cloud-agent-removal`。
+
+### Settings navigation
+
+主要入口在 `app/src/settings_view/mod.rs`：
+
+- `SettingsSection` 目前包含所有需要處理的 section：`Account`、
+  `BillingAndUsage`、`Teams`、`Referrals`、`SharedBlocks`、`WarpDrive`、
+  `WarpAgent`、`AgentProfiles`、`AgentMCPServers`、`Knowledge`、
+  `ThirdPartyCLIAgents`、`CloudEnvironments`、`OzCloudAPIKeys`。
+- `SettingsSection::ai_subpages()` 目前順序是 `WarpAgent`、`AgentProfiles`、
+  `AgentMCPServers`、`Knowledge`、`ThirdPartyCLIAgents`。第一階段應改成只保留
+  `ThirdPartyCLIAgents`，並決定 `AgentMCPServers` 是否只透過獨立
+  `MCPServers` page 保留。
+- `SettingsView::new` 目前會無條件建立所有 settings page handles，並在
+  `nav_items` 中加入 Account、Agents umbrella、Billing、Code umbrella、
+  Cloud platform umbrella、Teams、Referrals、SharedBlocks、WarpDrive、Privacy 等。
+  第一階段可先從 `nav_items` 強隱藏，不急著停止建立 backing views。
+- `initial_page` 與 `set_and_refresh_current_page_internal` 目前會把
+  `SettingsSection::AI` fallback 到 `WarpAgent`。本地模式要改成 fallback 到
+  `ThirdPartyCLIAgents` 或其他保留頁，避免舊 deeplink/restore 進入官方 Agent。
+- `should_render_page` 只委派到各頁自己的 `should_render()`；若只改 sidebar，
+  search、deeplink、local-control、command palette 仍可能進入 hidden sections。
+
+### Search 與 keyboard navigation
+
+`app/src/settings_view/mod.rs` 的 `handle_search_editor_event` 會逐一掃
+`SettingsSection::ai_subpages()` 和 `SettingsSection::code_subpages()`，並用
+`subpage_filter` 控制搜尋結果。隱藏官方 Agent subpages 時，必須同步更新：
+
+- `ai_subpages()`。
+- search filter 走訪邏輯是否仍會掃 hidden subpages。
+- collapsed umbrella navigation 測試。
+
+`app/src/settings_view/mod_tests.rs` 有多個 nav/search tests 假設 Agents umbrella
+包含 `WarpAgent`、`AgentProfiles`、`AgentMCPServers`、`Knowledge`、
+`ThirdPartyCLIAgents`，實作後必須更新。
+
+### Deeplink / command palette / local-control
+
+只隱藏 sidebar 不夠，以下入口也會直接開 settings section：
+
+- `app/src/uri/mod.rs`
+  - `warp://settings/teams`
+  - `warp://settings/billing_and_usage`
+  - `warp://settings/environments`
+  - `warp://settings/platform`
+  - `warp://settings/warp_agent`
+  - `settings_section_for_simple_subpage()` 目前把 `billing_and_usage`、`platform`、
+    `warp_agent` 映射到需要隱藏的 sections。
+- `app/src/workspace/mod.rs`
+  - command palette / editable bindings 目前註冊 Account、Shared Blocks、Teams、
+    AI、Billing、Referrals、Environments、MCP Servers 等 settings actions。
+  - 本地模式應移除或 disable cloud/account/official-agent 相關 actions，保留
+    Appearance、Features、Keybindings、About、Warpify、MCP Servers，以及
+    third-party CLI agents 需要的入口。
+- `app/src/local_control/handlers/app_state.rs`
+  - `surface.settings.open` 會用 `SettingsSection::from_str` 解析任意 page。
+  - 目前只特別禁止 `WarpDrive`；本地模式應禁止或 redirect hidden sections。
+- `app/src/root_view.rs` 和 `app/src/workspace/view.rs`
+  - root/workspace action 會直接 dispatch `WorkspaceAction::ShowSettingsPage(section)`。
+  - 建議在 `SettingsView::set_and_refresh_current_page_internal` 加本地 fallback，
+    作為所有入口的最後防線。
+
+### AI / Agents page
+
+`app/src/settings_view/ai_page.rs` 目前狀態：
+
+- `AISubpage` 包含 `WarpAgent`、`Profiles`、`Knowledge`、`ThirdPartyCLIAgents`。
+- `AISettingsPageView::build_page(None)` 會組出完整 AI page，包含
+  `GlobalAIWidget`、`UsageWidget`、`ActiveAIWidget`、`AgentsWidget`、
+  `AIInputWidget`、`MCPServersWidget`、`AIFactWidget`、`VoiceWidget`、
+  `CloudHandoffWidget`、`CLIAgentWidget`、`ApiKeysWidget`、`AwsBedrockWidget`、
+  `AgentAttributionWidget`、`CloudAgentComputerUseWidget`。
+- `Some(AISubpage::WarpAgent)` 仍會顯示官方 Agent/AI 相關 widgets。
+- `Some(AISubpage::ThirdPartyCLIAgents)` 只加入 `CLIAgentWidget`，是本地模式應保留的
+  主要頁面。
+- 若 `AgentMCPServers` 保留在 Agents umbrella，它實際映射到獨立 `MCPServers`
+  backing page；若要讓 Agents 只顯示 third-party CLI agents，MCP 應只保留獨立
+  `MCP Servers` sidebar page。
+
+### Privacy page
+
+`app/src/settings_view/privacy_page.rs` 的 `build_page()` 目前順序：
+
+- 保留候選：`SecretRedactionWidget`，以及視需求保留 `NetworkLogWidget`。
+- 隱藏候選：`AppAnalyticsWidget`、`CrashReportsWidget`、
+  `CloudConversationStorageWidget`、`DataManagementWidget`。
+- `PrivacyPolicyWidget` 屬品牌/外部政策連結，可保留或後續再決定。
+
+### Features page
+
+`app/src/settings_view/features_page.rs` 目前仍有多個 AI/Agent 控制：
+
+- `DefaultSessionModeWidget`：包含 agent terminal/session mode。
+- `AutoOpenCodeReviewPaneWidget`：agent change 後自動開 code review pane。
+- `DesktopNotificationsWidget`：包含 agent completed / needs attention /
+  in-app agent notifications。
+- `AtContextMenuInTerminalModeWidget`：AI context menu。
+- `SlashCommandsInTerminalModeWidget`：依賴 `AISettings::is_any_ai_enabled`。
+- `OutlineCodebaseSymbolsForAtContextMenuWidget`：AI context codebase outline。
+- `ShowTerminalZeroStateBlockWidget`：由 `FeatureFlag::AgentView` / AI 設定控制。
+
+非 agent terminal 功能仍應保留。
+
+### Account / billing / teams / cloud pages
+
+需要從 sidebar/search/deeplink/command palette 強隱藏：
+
+- `app/src/settings_view/main_page.rs`
+  - `AccountWidget`、`SettingsSyncWidget`、`EarnRewardsWidget`、
+    `IapCredentialsWidget`、`LogoutWidget`。
+  - `VersionInfoWidget` 可留在 About 或 diagnostics，但第一階段不需要保留 Account page。
+- `billing_and_usage_page.rs`、`billing_and_usage_page_v2.rs`、
+  `billing_and_usage_dispatch.rs`。
+- `teams_page.rs`。
+- `referrals_page.rs`。
+- `show_blocks_view.rs`。
+- `warp_drive_page.rs`。
+- `environments_page.rs`。
+- `platform_page.rs`。
+
+### 額外內部入口風險
+
+多個 AI/terminal path 會直接打開 `WarpAgent` 或 `BillingAndUsage`，例如
+`app/src/ai/blocklist/**`、`app/src/terminal/input.rs`、`app/src/terminal/view.rs`、
+`app/src/terminal/profile_model_selector.rs`。第一階段不必逐一刪除所有 call sites，
+但 `SettingsView` 層必須集中 redirect hidden sections，否則這些入口仍可打開 hidden page。
 
 ## 重套步驟
 

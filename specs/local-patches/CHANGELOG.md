@@ -4,6 +4,9 @@
 
 ## Unreleased
 
+- 在 `local/feature/warp-cloud-agent-removal` 上重新盤點目前 `master` 的
+  settings navigation、search/deeplink/command palette 入口、AI/Privacy/Features
+  widgets 與測試衝突點。
 - 新增 root `AGENTS.md`，記錄 fork 維護、分支、worktree、版號、build、測試與
   changelog 規則。
 - 新增 `specs/local-patches/` 維護結構與 feature template。
