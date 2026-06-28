@@ -5,7 +5,7 @@
 此本地 patch 會從個人 fork 移除或隱藏 Warp account、Warp cloud、billing、
 teams、referrals、官方 Warp Agent，以及 Warp-managed cloud agent 相關介面。
 
-目標不是立即刪除所有底層 model。第一階段應先強力隱藏使用者可見入口，同時維持
+目標不是立即刪除所有底層 model。第一階段先強力隱藏使用者可見入口，同時維持
 build 穩定性，並讓未來更新官方 stable 時更容易 rebase。
 
 ## 使用者可見行為
@@ -53,11 +53,10 @@ build 穩定性，並讓未來更新官方 stable 時更容易 rebase。
 ## 主要實作區域
 
 - `app/src/settings_view/mod.rs`
+  - `is_local_warp_cloud_ui_disabled()`
   - `SettingsView::new`
   - `SettingsSection::ai_subpages()`
   - hidden / deep-linked pages 的 navigation fallback
-- `app/src/settings_view/main_page.rs`
-  - Account page widgets
 - `app/src/settings_view/ai_page.rs`
   - `AISettingsPageView::build_page`
   - 保留 `CLIAgentWidget`
@@ -65,6 +64,14 @@ build 穩定性，並讓未來更新官方 stable 時更容易 rebase。
   - 移除 cloud/account/telemetry widgets，同時保留有用的 local privacy controls
 - `app/src/settings_view/features_page.rs`
   - 隱藏 agent / Warp AI-specific controls
+- `app/src/workspace/mod.rs`
+  - command palette / editable bindings 入口收斂
+- `app/src/uri/mod.rs`
+  - settings deeplink 收斂
+- `app/src/local_control/handlers/app_state.rs`
+  - `surface.settings.open` 禁止 hidden pages
+- `app/src/settings_view/mod_tests.rs`
+  - local sidebar / search / fallback 行為測試
 - 候選的整頁 settings：
   - `billing_and_usage_page.rs`
   - `billing_and_usage_page_v2.rs`
@@ -74,6 +81,9 @@ build 穩定性，並讓未來更新官方 stable 時更容易 rebase。
   - `warp_drive_page.rs`
   - `environments_page.rs`
   - `platform_page.rs`
+
+第一階段採用 navigation 與 page-level filtering；上述整頁檔案仍保留，避免物理刪除造成
+官方 stable 更新時的大量衝突。
 
 ## Build 與測試
 

@@ -43,8 +43,8 @@ use super::settings_page::{
     HEADER_PADDING, TOGGLE_BUTTON_RIGHT_PADDING,
 };
 use super::{
-    features, flags, render_beta_chip, DisplayCount, SettingsAction, SettingsSection,
-    ToggleSettingActionPair,
+    features, flags, is_local_warp_cloud_ui_disabled, render_beta_chip, DisplayCount,
+    SettingsAction, SettingsSection, ToggleSettingActionPair,
 };
 use crate::appearance::Appearance;
 use crate::default_terminal::DefaultTerminal;
@@ -301,6 +301,7 @@ pub fn init_actions_from_parent_view<T: Action + Clone>(
         )
         .with_enabled(|| FeatureFlag::AllowIgnoringInputSuggestions.is_enabled()),
     ];
+    let hide_warp_cloud_ui = is_local_warp_cloud_ui_disabled();
 
     toggle_binding_pairs.push(ToggleSettingActionPair::new(
         "reuse existing SSH ControlMaster in the Warp SSH wrapper",
@@ -334,36 +335,38 @@ pub fn init_actions_from_parent_view<T: Action + Clone>(
                 .is_supported_on_current_platform(),
         ),
     );
-    toggle_binding_pairs.push(
-        ToggleSettingActionPair::new(
-            "agent task completion notifications",
-            builder(SettingsAction::FeaturesPageToggle(
-                FeaturesPageAction::ToggleAgentTaskCompletedNotifications,
-            )),
-            &(context.to_owned() & id!(flags::NOTIFICATIONS_CONTEXT_FLAG)),
-            flags::AGENT_TASK_COMPLETED_NOTIFICATIONS_FLAG,
-        )
-        .is_supported_on_current_platform(
-            SessionSettings::as_ref(app)
-                .notifications
-                .is_supported_on_current_platform(),
-        ),
-    );
-    toggle_binding_pairs.push(
-        ToggleSettingActionPair::new(
-            "needs-attention notifications",
-            builder(SettingsAction::FeaturesPageToggle(
-                FeaturesPageAction::ToggleNeedsAttentionNotifications,
-            )),
-            &(context.to_owned() & id!(flags::NOTIFICATIONS_CONTEXT_FLAG)),
-            flags::NEEDS_ATTENTION_NOTIFICATIONS_FLAG,
-        )
-        .is_supported_on_current_platform(
-            SessionSettings::as_ref(app)
-                .notifications
-                .is_supported_on_current_platform(),
-        ),
-    );
+    if !hide_warp_cloud_ui {
+        toggle_binding_pairs.push(
+            ToggleSettingActionPair::new(
+                "agent task completion notifications",
+                builder(SettingsAction::FeaturesPageToggle(
+                    FeaturesPageAction::ToggleAgentTaskCompletedNotifications,
+                )),
+                &(context.to_owned() & id!(flags::NOTIFICATIONS_CONTEXT_FLAG)),
+                flags::AGENT_TASK_COMPLETED_NOTIFICATIONS_FLAG,
+            )
+            .is_supported_on_current_platform(
+                SessionSettings::as_ref(app)
+                    .notifications
+                    .is_supported_on_current_platform(),
+            ),
+        );
+        toggle_binding_pairs.push(
+            ToggleSettingActionPair::new(
+                "needs-attention notifications",
+                builder(SettingsAction::FeaturesPageToggle(
+                    FeaturesPageAction::ToggleNeedsAttentionNotifications,
+                )),
+                &(context.to_owned() & id!(flags::NOTIFICATIONS_CONTEXT_FLAG)),
+                flags::NEEDS_ATTENTION_NOTIFICATIONS_FLAG,
+            )
+            .is_supported_on_current_platform(
+                SessionSettings::as_ref(app)
+                    .notifications
+                    .is_supported_on_current_platform(),
+            ),
+        );
+    }
     #[cfg(target_os = "macos")]
     toggle_binding_pairs.push(
         ToggleSettingActionPair::new(
@@ -380,17 +383,19 @@ pub fn init_actions_from_parent_view<T: Action + Clone>(
                 .is_supported_on_current_platform(),
         ),
     );
-    toggle_binding_pairs.push(
-        ToggleSettingActionPair::new(
-            "in-app agent notifications",
-            builder(SettingsAction::FeaturesPageToggle(
-                FeaturesPageAction::ToggleAgentInAppNotifications,
-            )),
-            context,
-            flags::AGENT_IN_APP_NOTIFICATIONS_FLAG,
-        )
-        .with_enabled(|| FeatureFlag::HOANotifications.is_enabled()),
-    );
+    if !hide_warp_cloud_ui {
+        toggle_binding_pairs.push(
+            ToggleSettingActionPair::new(
+                "in-app agent notifications",
+                builder(SettingsAction::FeaturesPageToggle(
+                    FeaturesPageAction::ToggleAgentInAppNotifications,
+                )),
+                context,
+                flags::AGENT_IN_APP_NOTIFICATIONS_FLAG,
+            )
+            .with_enabled(|| FeatureFlag::HOANotifications.is_enabled()),
+        );
+    }
 
     toggle_binding_pairs.push(
         ToggleSettingActionPair::new(
@@ -559,7 +564,10 @@ pub fn init_actions_from_parent_view<T: Action + Clone>(
         context,
         flags::SMART_SELECT_FLAG,
     ));
-    if FeatureFlag::AgentView.is_enabled() && AISettings::as_ref(app).is_any_ai_enabled(app) {
+    if !hide_warp_cloud_ui
+        && FeatureFlag::AgentView.is_enabled()
+        && AISettings::as_ref(app).is_any_ai_enabled(app)
+    {
         toggle_binding_pairs.push(
             ToggleSettingActionPair::new(
                 "help block in new sessions",
@@ -577,32 +585,34 @@ pub fn init_actions_from_parent_view<T: Action + Clone>(
         );
     }
 
-    toggle_binding_pairs.push(
-        ToggleSettingActionPair::new(
-            "terminal input message line",
-            builder(SettingsAction::FeaturesPageToggle(
-                FeaturesPageAction::ToggleShowTerminalInputMessageLine,
-            )),
-            context,
-            flags::SHOW_TERMINAL_INPUT_MESSAGE_LINE_FLAG,
-        )
-        .with_enabled(|| FeatureFlag::AgentView.is_enabled()),
-    );
-    toggle_binding_pairs.push(
-        ToggleSettingActionPair::new(
-            "'@' context menu in terminal mode",
-            builder(SettingsAction::FeaturesPageToggle(
-                FeaturesPageAction::ToggleAtContextMenuInTerminalMode,
-            )),
-            context,
-            flags::AT_CONTEXT_MENU_IN_TERMINAL_FLAG,
-        )
-        .is_supported_on_current_platform(
-            InputSettings::as_ref(app)
-                .at_context_menu_in_terminal_mode
-                .is_supported_on_current_platform(),
-        ),
-    );
+    if !hide_warp_cloud_ui {
+        toggle_binding_pairs.push(
+            ToggleSettingActionPair::new(
+                "terminal input message line",
+                builder(SettingsAction::FeaturesPageToggle(
+                    FeaturesPageAction::ToggleShowTerminalInputMessageLine,
+                )),
+                context,
+                flags::SHOW_TERMINAL_INPUT_MESSAGE_LINE_FLAG,
+            )
+            .with_enabled(|| FeatureFlag::AgentView.is_enabled()),
+        );
+        toggle_binding_pairs.push(
+            ToggleSettingActionPair::new(
+                "'@' context menu in terminal mode",
+                builder(SettingsAction::FeaturesPageToggle(
+                    FeaturesPageAction::ToggleAtContextMenuInTerminalMode,
+                )),
+                context,
+                flags::AT_CONTEXT_MENU_IN_TERMINAL_FLAG,
+            )
+            .is_supported_on_current_platform(
+                InputSettings::as_ref(app)
+                    .at_context_menu_in_terminal_mode
+                    .is_supported_on_current_platform(),
+            ),
+        );
+    }
 
     toggle_binding_pairs.push(ToggleSettingActionPair::new(
         "preserve input focus on block selection",
@@ -613,7 +623,10 @@ pub fn init_actions_from_parent_view<T: Action + Clone>(
         flags::PRESERVE_INPUT_FOCUS_ON_BLOCK_SELECTION_FLAG,
     ));
 
-    if FeatureFlag::AgentView.is_enabled() && AISettings::as_ref(app).is_any_ai_enabled(app) {
+    if !hide_warp_cloud_ui
+        && FeatureFlag::AgentView.is_enabled()
+        && AISettings::as_ref(app).is_any_ai_enabled(app)
+    {
         toggle_binding_pairs.push(
             ToggleSettingActionPair::new(
                 "slash commands in terminal mode",
@@ -630,7 +643,7 @@ pub fn init_actions_from_parent_view<T: Action + Clone>(
             ),
         );
     }
-    if FeatureFlag::AIContextMenuCode.is_enabled() {
+    if !hide_warp_cloud_ui && FeatureFlag::AIContextMenuCode.is_enabled() {
         toggle_binding_pairs.push(
             ToggleSettingActionPair::new(
                 "codebase symbols in the '@' context menu",
@@ -2662,8 +2675,12 @@ impl FeaturesPageView {
     }
 
     fn build_page(ctx: &mut ViewContext<Self>) -> PageType<Self> {
-        let mut general_widgets: Vec<Box<dyn SettingsWidget<View = Self>>> =
-            vec![Box::new(DefaultSessionModeWidget::default())];
+        let hide_warp_cloud_ui = is_local_warp_cloud_ui_disabled();
+        let mut general_widgets: Vec<Box<dyn SettingsWidget<View = Self>>> = if hide_warp_cloud_ui {
+            vec![]
+        } else {
+            vec![Box::new(DefaultSessionModeWidget::default())]
+        };
 
         let native_preference_settings = NativePreferenceSettings::as_ref(ctx);
         if native_preference_settings
@@ -2735,7 +2752,8 @@ impl FeaturesPageView {
             general_widgets.push(Box::new(MouseScrollMultiplierWidget::default()));
         }
 
-        if FeatureFlag::AutoOpenCodeReviewPane.is_enabled()
+        if !hide_warp_cloud_ui
+            && FeatureFlag::AutoOpenCodeReviewPane.is_enabled()
             && !FeatureFlag::OpenWarpNewSettingsModes.is_enabled()
         {
             general_widgets.push(Box::new(AutoOpenCodeReviewPaneWidget::default()));
@@ -2883,14 +2901,16 @@ impl FeaturesPageView {
             editor_widgets.push(Box::new(AutosuggestionIgnoreButtonWidget::default()));
         }
 
-        if input_settings
-            .at_context_menu_in_terminal_mode
-            .is_supported_on_current_platform()
+        if !hide_warp_cloud_ui
+            && input_settings
+                .at_context_menu_in_terminal_mode
+                .is_supported_on_current_platform()
         {
             editor_widgets.push(Box::new(AtContextMenuInTerminalModeWidget::default()));
         }
 
-        if FeatureFlag::AgentView.is_enabled()
+        if !hide_warp_cloud_ui
+            && FeatureFlag::AgentView.is_enabled()
             && input_settings
                 .enable_slash_commands_in_terminal
                 .is_supported_on_current_platform()
@@ -2898,9 +2918,10 @@ impl FeaturesPageView {
             editor_widgets.push(Box::new(SlashCommandsInTerminalModeWidget::default()));
         }
 
-        if input_settings
-            .outline_codebase_symbols_for_at_context_menu
-            .is_supported_on_current_platform()
+        if !hide_warp_cloud_ui
+            && input_settings
+                .outline_codebase_symbols_for_at_context_menu
+                .is_supported_on_current_platform()
             && FeatureFlag::AIContextMenuCode.is_enabled()
         {
             editor_widgets.push(Box::new(
@@ -2908,7 +2929,7 @@ impl FeaturesPageView {
             ));
         }
 
-        if FeatureFlag::AgentView.is_enabled() {
+        if !hide_warp_cloud_ui && FeatureFlag::AgentView.is_enabled() {
             editor_widgets.push(Box::new(ShowTerminalInputMessageLineWidget::default()));
         }
 
@@ -2952,7 +2973,7 @@ impl FeaturesPageView {
             terminal_widgets.push(Box::new(AudibleBellWidget::default()));
         }
 
-        if FeatureFlag::AgentView.is_enabled() {
+        if !hide_warp_cloud_ui && FeatureFlag::AgentView.is_enabled() {
             terminal_widgets.push(Box::new(ShowTerminalZeroStateBlockWidget::default()));
         }
 
@@ -5243,48 +5264,53 @@ impl SettingsWidget for DesktopNotificationsWidget {
             session_settings.notifications.mode,
             NotificationsMode::Enabled
         ) {
-            let toggles = vec![
-                view.render_notification_toggle(
-                    session_settings
-                        .notifications
-                        .is_agent_task_completed_enabled,
-                    "Notify when an agent completes a task",
-                    FeaturesPageAction::ToggleAgentTaskCompletedNotifications,
-                    view.button_mouse_states
-                        .agent_task_completed_notifications_checkbox
-                        .clone(),
-                    appearance,
-                ),
-                view.render_long_running_notifications_setting(
-                    &session_settings.notifications,
-                    appearance,
-                ),
-                view.render_notification_toggle(
-                    session_settings.notifications.is_needs_attention_enabled,
-                    "Notify when a command or agent needs your attention to continue",
-                    FeaturesPageAction::ToggleNeedsAttentionNotifications,
-                    view.button_mouse_states
-                        .agent_needs_attention_notifications_checkbox
-                        .clone(),
-                    appearance,
-                ),
-                // Add notification sound toggle only on macOS
-                #[cfg(target_os = "macos")]
-                {
+            let mut toggles = vec![view.render_long_running_notifications_setting(
+                &session_settings.notifications,
+                appearance,
+            )];
+
+            if !is_local_warp_cloud_ui_disabled() {
+                toggles.insert(
+                    0,
                     view.render_notification_toggle(
-                        session_settings.notifications.play_notification_sound,
-                        "Play notification sounds",
-                        FeaturesPageAction::ToggleNotificationSound,
-                        view.button_mouse_states.notification_sound_checkbox.clone(),
+                        session_settings
+                            .notifications
+                            .is_agent_task_completed_enabled,
+                        "Notify when an agent completes a task",
+                        FeaturesPageAction::ToggleAgentTaskCompletedNotifications,
+                        view.button_mouse_states
+                            .agent_task_completed_notifications_checkbox
+                            .clone(),
                         appearance,
-                    )
-                },
-            ];
+                    ),
+                );
+                toggles.push(
+                    view.render_notification_toggle(
+                        session_settings.notifications.is_needs_attention_enabled,
+                        "Notify when a command or agent needs your attention to continue",
+                        FeaturesPageAction::ToggleNeedsAttentionNotifications,
+                        view.button_mouse_states
+                            .agent_needs_attention_notifications_checkbox
+                            .clone(),
+                        appearance,
+                    ),
+                );
+            }
+
+            // Add notification sound toggle only on macOS
+            #[cfg(target_os = "macos")]
+            toggles.push(view.render_notification_toggle(
+                session_settings.notifications.play_notification_sound,
+                "Play notification sounds",
+                FeaturesPageAction::ToggleNotificationSound,
+                view.button_mouse_states.notification_sound_checkbox.clone(),
+                appearance,
+            ));
 
             column.add_child(render_group(toggles, appearance));
         }
 
-        if FeatureFlag::HOANotifications.is_enabled() {
+        if !is_local_warp_cloud_ui_disabled() && FeatureFlag::HOANotifications.is_enabled() {
             let ai_settings = AISettings::as_ref(app);
             let show_agent_notifications = *ai_settings.show_agent_notifications;
             column.add_child(render_body_item::<FeaturesPageAction>(

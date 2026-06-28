@@ -4,6 +4,15 @@
 
 ## Unreleased
 
+- 在 `local/feature/warp-cloud-agent-removal` 第一階段實作 settings 強隱藏：
+  - sidebar 移除 Account、Billing、Teams、Referrals、Shared Blocks、Warp Drive、
+    Cloud platform 與官方 Warp Agent 子頁。
+  - Agents umbrella 只保留 `ThirdPartyCLIAgents`，MCP 改為獨立 settings page。
+  - search / direct navigation fallback 會將 hidden entrypoints 導到
+    `ThirdPartyCLIAgents`、`MCPServers` 或 `Appearance`。
+  - command palette、URI deeplink、local-control 的 hidden settings 入口同步收斂。
+  - AI settings local 模式只渲染 `CLIAgentWidget`，Privacy / Features 移除官方
+    cloud、Warp AI、Agent 專用 controls。
 - 在 `local/feature/warp-cloud-agent-removal` 上重新盤點目前 `master` 的
   settings navigation、search/deeplink/command palette 入口、AI/Privacy/Features
   widgets 與測試衝突點。

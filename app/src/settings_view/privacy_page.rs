@@ -35,7 +35,10 @@ use super::settings_page::{
     SettingsPageViewHandle, SettingsWidget, ToggleState, HEADER_PADDING, PAGE_PADDING,
     TOGGLE_BUTTON_RIGHT_PADDING,
 };
-use super::{flags, SettingsAction, SettingsSection, ToggleSettingActionPair};
+use super::{
+    flags, is_local_warp_cloud_ui_disabled, SettingsAction, SettingsSection,
+    ToggleSettingActionPair,
+};
 use crate::appearance::Appearance;
 use crate::auth::auth_manager::AuthManager;
 use crate::channel::ChannelState;
@@ -223,17 +226,20 @@ impl PrivacyPageView {
     }
 
     fn build_page() -> PageType<Self> {
-        let mut widgets: Vec<Box<dyn SettingsWidget<View = Self>>> = vec![
-            Box::new(SecretRedactionWidget::default()),
-            Box::new(AppAnalyticsWidget::default()),
-            Box::new(CrashReportsWidget::default()),
-            Box::new(CloudConversationStorageWidget::default()),
-        ];
+        let mut widgets: Vec<Box<dyn SettingsWidget<View = Self>>> =
+            vec![Box::new(SecretRedactionWidget::default())];
+        if !is_local_warp_cloud_ui_disabled() {
+            widgets.push(Box::new(AppAnalyticsWidget::default()));
+            widgets.push(Box::new(CrashReportsWidget::default()));
+            widgets.push(Box::new(CloudConversationStorageWidget::default()));
+        }
         if ContextFlag::NetworkLogConsole.is_enabled() {
             widgets.push(Box::new(NetworkLogWidget::default()));
         }
-        widgets.push(Box::new(DataManagementWidget::default()));
-        widgets.push(Box::new(PrivacyPolicyWidget::default()));
+        if !is_local_warp_cloud_ui_disabled() {
+            widgets.push(Box::new(DataManagementWidget::default()));
+            widgets.push(Box::new(PrivacyPolicyWidget::default()));
+        }
         PageType::new_uncategorized(widgets, Some("Privacy"))
     }
 
@@ -1959,24 +1965,28 @@ pub fn init_actions_from_parent_view<T: Action + Clone>(
     context: &ContextPredicate,
     builder: fn(SettingsAction) -> T,
 ) {
-    let mut toggle_binding_pairs = vec![
-        ToggleSettingActionPair::new(
-            "app analytics",
-            builder(SettingsAction::PrivacyPageToggle(
-                PrivacyPageAction::ToggleTelemetry,
-            )),
-            context,
-            flags::TELEMETRY_FLAG,
-        ),
-        ToggleSettingActionPair::new(
-            "crash reporting",
-            builder(SettingsAction::PrivacyPageToggle(
-                PrivacyPageAction::ToggleCrashReporting,
-            )),
-            context,
-            flags::CRASH_REPORTING_FLAG,
-        ),
-    ];
+    let mut toggle_binding_pairs = vec![];
+
+    if !is_local_warp_cloud_ui_disabled() {
+        toggle_binding_pairs.extend([
+            ToggleSettingActionPair::new(
+                "app analytics",
+                builder(SettingsAction::PrivacyPageToggle(
+                    PrivacyPageAction::ToggleTelemetry,
+                )),
+                context,
+                flags::TELEMETRY_FLAG,
+            ),
+            ToggleSettingActionPair::new(
+                "crash reporting",
+                builder(SettingsAction::PrivacyPageToggle(
+                    PrivacyPageAction::ToggleCrashReporting,
+                )),
+                context,
+                flags::CRASH_REPORTING_FLAG,
+            ),
+        ]);
+    }
 
     toggle_binding_pairs.push(ToggleSettingActionPair::new(
         "secret redaction",
@@ -1987,19 +1997,21 @@ pub fn init_actions_from_parent_view<T: Action + Clone>(
         flags::SAFE_MODE_FLAG,
     ));
 
-    toggle_binding_pairs.push(
-        ToggleSettingActionPair::new(
-            "cloud AI conversation storage",
-            builder(SettingsAction::PrivacyPageToggle(
-                PrivacyPageAction::ToggleCloudConversationStorage,
-            )),
-            &(context.clone()
-                & id!(flags::IS_ANY_AI_ENABLED)
-                & id!(flags::CLOUD_CONVERSATION_STORAGE_EDITABLE_FLAG)),
-            flags::CLOUD_CONVERSATION_STORAGE_FLAG,
-        )
-        .with_enabled(|| FeatureFlag::CloudConversations.is_enabled()),
-    );
+    if !is_local_warp_cloud_ui_disabled() {
+        toggle_binding_pairs.push(
+            ToggleSettingActionPair::new(
+                "cloud AI conversation storage",
+                builder(SettingsAction::PrivacyPageToggle(
+                    PrivacyPageAction::ToggleCloudConversationStorage,
+                )),
+                &(context.clone()
+                    & id!(flags::IS_ANY_AI_ENABLED)
+                    & id!(flags::CLOUD_CONVERSATION_STORAGE_EDITABLE_FLAG)),
+                flags::CLOUD_CONVERSATION_STORAGE_FLAG,
+            )
+            .with_enabled(|| FeatureFlag::CloudConversations.is_enabled()),
+        );
+    }
 
     ToggleSettingActionPair::add_toggle_setting_action_pairs_as_bindings(toggle_binding_pairs, app);
 }

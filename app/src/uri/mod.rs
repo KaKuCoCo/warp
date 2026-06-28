@@ -33,7 +33,9 @@ use crate::root_view::{
 };
 use crate::server::ids::ServerId;
 use crate::server::telemetry::{LaunchConfigUiLocation, TelemetryEvent};
-use crate::settings_view::{OpenTeamsSettingsModalArgs, SettingsSection};
+use crate::settings_view::{
+    is_local_warp_cloud_ui_disabled, OpenTeamsSettingsModalArgs, SettingsSection,
+};
 use crate::tab_configs::TabConfig;
 use crate::user_config::{load_launch_configs, load_tab_configs, tab_configs_dir};
 use crate::util::openable_file_type::{
@@ -355,6 +357,10 @@ impl UriHost {
                 if let Some(settings_sub_page) = settings_sub_page {
                     match settings_sub_page.as_str() {
                         "teams" => {
+                            if is_local_warp_cloud_ui_disabled() {
+                                log::warn!("Ignoring disabled local settings pane uri={url}");
+                                return;
+                            }
                             let invite_email = query_string.get("invite").map(|s| s.to_string());
                             let args = OpenTeamsSettingsModalArgs { invite_email };
                             dispatch_action_in_new_or_existing_window(
@@ -375,7 +381,7 @@ impl UriHost {
                             // (cloud setup users should stay on their current page)
                             let source = query_string.get("source").map(|s| s.as_ref());
                             let skip_settings = source == Some(CLOUD_SETUP_SOURCE);
-                            if !skip_settings {
+                            if !skip_settings && !is_local_warp_cloud_ui_disabled() {
                                 dispatch_action_in_new_or_existing_window(
                                     primary_window_id,
                                     "root_view:open_settings_page_in_existing_window",
@@ -1103,13 +1109,15 @@ impl Action {
                 GitHubAuthNotifier::handle(ctx).update(ctx, |notifier, ctx| {
                     notifier.notify_auth_completed(ctx);
                 });
-                dispatch_action_in_new_or_existing_window(
-                    primary_window_id,
-                    "root_view:open_settings_page_in_existing_window",
-                    "root_view:open_settings_page_in_new_window",
-                    &SettingsSection::CloudEnvironments,
-                    ctx,
-                );
+                if !is_local_warp_cloud_ui_disabled() {
+                    dispatch_action_in_new_or_existing_window(
+                        primary_window_id,
+                        "root_view:open_settings_page_in_existing_window",
+                        "root_view:open_settings_page_in_new_window",
+                        &SettingsSection::CloudEnvironments,
+                        ctx,
+                    );
+                }
             }
             Action::AutoHandoffToCloud { trigger } => {
                 trigger_auto_handoff_to_cloud(*trigger, ctx);
@@ -1570,12 +1578,21 @@ fn dispatch_action_in_new_or_existing_window<T: 'static>(
 }
 
 fn settings_section_for_simple_subpage(subpage: &str) -> Option<SettingsSection> {
-    match subpage {
+    let section = match subpage {
         "billing_and_usage" => Some(SettingsSection::BillingAndUsage),
         "platform" => Some(SettingsSection::OzCloudAPIKeys),
         "appearance" => Some(SettingsSection::Appearance),
+        "warp_agent" if is_local_warp_cloud_ui_disabled() => {
+            Some(SettingsSection::ThirdPartyCLIAgents)
+        }
         "warp_agent" => Some(SettingsSection::WarpAgent),
         _ => None,
+    }?;
+
+    if section.is_hidden_by_local_warp_cloud_ui() {
+        None
+    } else {
+        Some(section)
     }
 }
 

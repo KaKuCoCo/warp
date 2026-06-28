@@ -12,6 +12,67 @@
 本盤點基於 `master` 的 `1be263b3` 之後開出的
 `local/feature/warp-cloud-agent-removal`。
 
+## 2026-06-28 第一階段實作
+
+本階段沒有物理刪除 account/cloud/billing/team/official Agent models，而是在
+settings 可見入口加強隱藏與 fallback：
+
+- `app/src/settings_view/mod.rs`
+  - 新增 `is_local_warp_cloud_ui_disabled()` 作為本 patch 的集中 grep anchor。
+  - `SettingsSection::ai_subpages()` 在本地模式只回傳 `ThirdPartyCLIAgents`。
+  - `SettingsView::new` 的 local sidebar 只保留：
+    - `Agents` umbrella：`ThirdPartyCLIAgents`
+    - `MCPServers`
+    - `Code`
+    - `Appearance`
+    - `Features`
+    - `Keybindings`
+    - `Warpify`
+    - `Privacy`
+    - `About`
+  - `filtered_pages()` / `should_render_page()` 會排除 hidden backing pages。
+  - `initial_page` 與 `set_and_refresh_current_page_internal()` 會把 hidden entrypoints
+    redirect 到 `ThirdPartyCLIAgents`、`MCPServers` 或 `Appearance`。
+  - `open_mcp_servers_page()` 在本地模式直接開 `MCPServers`，不再經過
+    `AgentMCPServers`。
+- `app/src/settings_view/ai_page.rs`
+  - local 模式下 `AISettingsPageView::build_page()` 與 `set_active_subpage()` 都正規化為
+    `ThirdPartyCLIAgents`，只渲染 `CLIAgentWidget`。
+  - local 模式下 `on_page_selected()` 不刷新 Warp AI usage。
+- `app/src/settings_view/privacy_page.rs`
+  - local 模式保留 `SecretRedactionWidget` 與既有 flag gate 的 `NetworkLogWidget`。
+  - 移除 analytics、crash reports、cloud conversation storage、data management 與
+    privacy policy widget 的 settings surface。
+  - command palette toggle bindings 只保留 secret redaction。
+- `app/src/settings_view/features_page.rs`
+  - local 模式隱藏 default session mode、agent/code-review auto-open、agent notification、
+    AI context menu、slash command agent mode、AI codebase outline、terminal input message line
+    與 terminal zero-state agent block。
+  - 一般 terminal features 與 long-running command notifications 保留。
+- `app/src/workspace/mod.rs`
+  - command palette 的 `Open Settings: AI` 在本地模式改為
+    `Open Settings: Third party CLI agents`。
+  - Account、Shared Blocks、Teams、Billing、Referrals、Environments、Invite People bindings
+    在本地模式停用。
+- `app/src/uri/mod.rs`
+  - `warp://settings/warp_agent` 在本地模式導到 `ThirdPartyCLIAgents`。
+  - `teams`、`billing_and_usage`、`platform`、`environments` 不再打開 hidden settings。
+- `app/src/local_control/handlers/app_state.rs`
+  - `surface.settings.open` 對 hidden sections 回傳 `UnsupportedAction`。
+- `app/src/settings_view/mod_tests.rs`
+  - 更新 local sidebar/search/fallback 測試。
+
+驗證狀態：
+
+- `cargo fmt`：通過。
+- `git diff --check`：通過。
+- `cargo check -p warp --bin warp-oss --features release_bundle,gui --target x86_64-pc-windows-msvc`：
+  本機無法執行，原因是缺少 MSVC `link.exe` 與 Windows SDK import libs，例如
+  `kernel32.lib`、`ntdll.lib`、`userenv.lib`、`ws2_32.lib`、`dbghelp.lib`。
+- `cargo test -p warp settings_view::mod_tests --no-default-features --features gui`：
+  本機無法執行，原因是缺少 MSVC `link.exe` / Visual Studio Build Tools。
+  這是目前 Windows host toolchain 問題，不是測試 assertion failure。
+
 ### Settings navigation
 
 主要入口在 `app/src/settings_view/mod.rs`：

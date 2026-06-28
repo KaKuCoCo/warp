@@ -52,8 +52,8 @@ use super::settings_page::{
     HEADER_PADDING, TOGGLE_BUTTON_RIGHT_PADDING,
 };
 use super::{
-    editor_text_colors, flags, SettingActionPairContexts, SettingActionPairDescriptions,
-    SettingsAction, SettingsSection, ToggleSettingActionPair,
+    editor_text_colors, flags, is_local_warp_cloud_ui_disabled, SettingActionPairContexts,
+    SettingActionPairDescriptions, SettingsAction, SettingsSection, ToggleSettingActionPair,
 };
 #[cfg(not(target_family = "wasm"))]
 use crate::ai::aws_credentials::refresh_aws_credentials;
@@ -2743,6 +2743,12 @@ impl AISettingsPageView {
 
     /// Set the active subpage and rebuild the widget list to show only relevant widgets.
     pub fn set_active_subpage(&mut self, subpage: Option<AISubpage>, ctx: &mut ViewContext<Self>) {
+        let subpage = if is_local_warp_cloud_ui_disabled() {
+            Some(AISubpage::ThirdPartyCLIAgents)
+        } else {
+            subpage
+        };
+
         if self.active_subpage != subpage {
             self.active_subpage = subpage;
             self.page = Self::build_page(subpage, ctx);
@@ -2754,6 +2760,11 @@ impl AISettingsPageView {
         let ai_settings = AISettings::as_ref(ctx);
 
         let mut widgets: Vec<Box<dyn SettingsWidget<View = AISettingsPageView>>> = Vec::new();
+        let subpage = if is_local_warp_cloud_ui_disabled() {
+            Some(AISubpage::ThirdPartyCLIAgents)
+        } else {
+            subpage
+        };
 
         // When viewing a specific subpage, only include its widgets.
         // When subpage is None (legacy/backward-compat), show all widgets.
@@ -4500,6 +4511,10 @@ impl SettingsPageMeta for AISettingsPageView {
     }
 
     fn on_page_selected(&mut self, _: bool, ctx: &mut ViewContext<Self>) {
+        if is_local_warp_cloud_ui_disabled() {
+            return;
+        }
+
         AIRequestUsageModel::handle(ctx).update(ctx, |ai_request_usage_model, ctx| {
             ai_request_usage_model.refresh_request_usage_async(ctx)
         });
