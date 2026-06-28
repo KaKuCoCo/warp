@@ -1,0 +1,63 @@
+name: Build Windows IME Warp
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to build
+        required: true
+        default: ime-stable-20260603-pr10122
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Windows warp-oss
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout target ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Set build metadata
+        shell: pwsh
+        run: |
+          "GIT_RELEASE_TAG=v0.2026.06.03.09.49.stable_00-ime-pr10122.${{ github.run_number }}" >> $env:GITHUB_ENV
+          "RELEASE_TAG=v0.2026.06.03.09.49.stable_00-ime-pr10122.${{ github.run_number }}" >> $env:GITHUB_ENV
+
+      - name: Install protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          version: "31.x"
+
+      - name: Build warp-oss
+        shell: pwsh
+        run: |
+          cargo build -p warp --bin warp-oss --features gui
+
+      - name: Package artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item target\debug\warp-oss.exe dist\warp-oss-ime.exe
+          Compress-Archive -Path dist\warp-oss-ime.exe -DestinationPath dist\warp-oss-ime-windows.zip -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: warp-oss-ime-windows
+          path: dist/warp-oss-ime-windows.zip
+          retention-days: 7
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create $env:RELEASE_TAG dist\warp-oss-ime-windows.zip `
+            --title "Warp Windows IME build $env:RELEASE_TAG" `
+            --notes "Built from public stable tag v0.2026.06.03.09.49.stable_00 with PR #10122 (Enable IME marked text on Windows). This is an unofficial OSS-channel build." `
+            --prerelease
