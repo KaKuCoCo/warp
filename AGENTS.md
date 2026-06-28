@@ -1,4 +1,149 @@
-# AGENTS.md
+# KaKuCoCo Warp Fork 維護指南
+
+這個 repository 是個人維護的 Warp fork。主要目標是能快速基於官方最新
+stable release tag，重新套用本地客製 patch，並建出可使用的 Windows
+安裝檔 (`WarpOssSetup.exe`)。
+
+下方 upstream 開發指南仍適用於一般 Rust、UI、測試與風格規範。本節針對此個人
+fork 的維護、分支、發版與本地 patch 文件規範，優先於 upstream 的貢獻流程。
+
+## 維護目標
+
+- 追蹤 `warpdotdev/warp` 的官方 stable release。
+- 每次官方 stable 更新後，以最低衝突成本重新套用本地 patches。
+- 主要產物是 Windows OSS channel 安裝檔：
+  `WarpOssSetup.exe`。
+- 每個本地客製功能都必須有足夠文件，讓另一個 session 能在 upstream 衝突後快速修正。
+- 本地改動應保持小範圍且可搜尋。patch 專用 gate 附近優先使用具名 helper
+  或 `LOCAL-PATCH(<slug>)` 註解。
+
+目前重要的本地 patches 包含 Windows IME 修補，以及規劃中的 Warp login、
+Warp cloud、billing、team、官方 Warp Agent 介面移除/隱藏。這些只是本地
+patch 的例子，不是此 fork 的唯一目標。
+
+## 分支規則
+
+- `master`：最新已驗證、可發版的個人 stable build。
+- `base/stable/<yyyymmdd>`：從官方 stable tag 建立的乾淨基底分支。
+- `local/upgrade/<official-tag>`：更新到新版官方 stable tag 時使用的分支。
+- `local/feature/<slug>`：單一客製功能或維護功能分支。
+
+不要在同一個 feature branch 混入無關的本地 patches。如果某個改動同時更新
+官方基底並修正本地 patch 衝突，兩者都要記錄到
+`specs/local-patches/CHANGELOG.md`。
+
+## Worktree 規則
+
+- 每個 upgrade 或 feature branch 都使用獨立 worktree。
+- 預設 worktree root：`$WARP_WORKTREES`。
+- 預設路徑格式：`$WARP_WORKTREES/<branch-slug>`。
+- 分支 merge 且不再需要後，移除 worktree 並執行
+  `git worktree prune`。
+
+開始編輯前先檢查：
+
+```powershell
+git status --short --branch
+git worktree list
+```
+
+除非使用者明確要求，不要刪除或 reset 其他 worktree 裡的使用者改動。
+
+## 本地 Patch 文件
+
+所有本地 patches 都放在 `specs/local-patches/`。
+
+必要文件：
+
+- `specs/local-patches/README.md`：patch index、目前基底、目前 local release、patch 套用順序。
+- `specs/local-patches/CHANGELOG.md`：個人 fork changelog。
+- `specs/local-patches/templates/FEATURE.md`：新 patch 文件模板。
+- `specs/local-patches/features/<feature-slug>/README.md`：使用者可見目標、行為、範圍與主要實作筆記。
+- `specs/local-patches/features/<feature-slug>/MAINTENANCE.md`：重套步驟、grep anchors、衝突熱點與驗證清單。
+
+每個本地 feature branch merge 回 `master` 前，都必須新增或更新對應 feature 文件。
+
+## 官方 Stable 更新流程
+
+使用最新一個 tag 包含 `.stable_` 且 `prerelease` 為 `false` 的 GitHub Release。
+
+1. Fetch 官方 tags。
+2. Checkout 最新官方 stable tag。
+3. 建立或更新 `base/stable/<yyyymmdd>`。
+4. 建立 `local/upgrade/<official-tag>`。
+5. 依 `specs/local-patches/README.md` 中列出的順序重新套用本地 patches。
+6. 解決衝突。
+7. 如果 anchors 或衝突點改變，更新受影響的
+   `features/<feature-slug>/MAINTENANCE.md`。
+8. 執行必要檢查與 Windows build。
+9. 將已驗證的 upgrade merge 回 `master`。
+10. 更新 `specs/local-patches/CHANGELOG.md`。
+
+未來自動化應每天檢查官方 releases。發現新版 stable 時，只建立 issue 或 draft
+upgrade branch；在人工驗證前不得自動發版。
+
+## 版號規則
+
+本地 release 使用官方 stable tag 加個人後綴：
+
+```text
+<official-stable-tag>-kakucoco.<N>
+```
+
+範例：
+
+```text
+v0.2026.06.03.09.49.stable_00-kakucoco.1
+```
+
+同一個官方 stable tag 重 build 時遞增 `<N>`。換到新版官方 stable tag 後從
+`.1` 重新開始。
+
+舊的 local releases 可能使用 `-ime-pr10122.<N>` 等歷史後綴。保留這些 tags
+作為歷史紀錄，但新 release 統一使用 `-kakucoco.<N>`。
+
+## Build 與測試規則
+
+feature 或 upgrade merge 到 `master` 前，至少執行：
+
+```powershell
+cargo check -p warp --bin warp-oss --features release_bundle,gui --target x86_64-pc-windows-msvc
+```
+
+release 驗證時，執行 Windows GitHub Actions build，並確認產出：
+
+- 主要 artifact：`WarpOssSetup.exe`
+- 可選 artifact：`WarpOssPortable.zip`
+
+每個 release candidate 都要做 smoke test：
+
+- App 可啟動。
+- Windows 中文 IME marked/preedit text 仍正常。
+- 基本 terminal workflow 正常。
+- 主要本地客製功能仍正常。
+- 對於 cloud/agent removal patch，Settings 不得露出 Warp login、billing、
+  teams、cloud 或官方 Warp Agent 介面。
+- Third-party CLI agents settings 仍可進入，支援 `claude`、
+  `codex` 與 `gemini`。
+- MCP settings 仍可進入，除非後續 patch 明確改變此行為。
+
+## Changelog 規則
+
+每個 merge 回 `master` 的 feature 或 upgrade 都必須更新
+`specs/local-patches/CHANGELOG.md`，除非該分支明確標記
+`CHANGELOG-NONE`。
+
+changelog entries 應記錄：
+
+- 官方 stable 基底變更。
+- 本地 patch 新增、移除與行為變更。
+- Build workflow 變更。
+- 未來維護者需要知道的驗證備註。
+
+未來 CI 應在有 code changes、但未更新 `specs/local-patches/CHANGELOG.md` 且未宣告
+`CHANGELOG-NONE` 時，讓 PR 或 branch merge 失敗。
+
+# Upstream AGENTS.md
 
 This file provides guidance when working with code in this repository.
 

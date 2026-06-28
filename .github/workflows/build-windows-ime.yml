@@ -1,4 +1,4 @@
-name: Build Windows IME Warp
+name: Build Windows Local Warp
 
 on:
   workflow_dispatch:
@@ -7,6 +7,18 @@ on:
         description: Git ref to build
         required: true
         default: ime-stable-20260603-pr10122
+      official_stable_tag:
+        description: "Official stable tag to use in the local release tag"
+        required: true
+        type: string
+      local_release_suffix:
+        description: "Local suffix, for example kakucoco.1"
+        required: true
+        type: string
+      release_notes_path:
+        description: "Optional repo-relative release notes markdown file"
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -25,7 +37,7 @@ jobs:
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: windows-ime-warp-oss
+          shared-key: windows-local-warp-oss
           cache-on-failure: true
           workspaces: |
             . -> target
@@ -33,8 +45,21 @@ jobs:
       - name: Set build metadata
         shell: pwsh
         run: |
-          "GIT_RELEASE_TAG=v0.2026.06.03.09.49.stable_00-ime-pr10122.${{ github.run_number }}" >> $env:GITHUB_ENV
-          "RELEASE_TAG=v0.2026.06.03.09.49.stable_00-ime-pr10122.${{ github.run_number }}" >> $env:GITHUB_ENV
+          $officialTag = "${{ inputs.official_stable_tag }}".Trim()
+          $localSuffix = "${{ inputs.local_release_suffix }}".Trim().TrimStart("-")
+          if (-not $officialTag.Contains(".stable_")) {
+            throw "official_stable_tag must be an official stable tag containing '.stable_'."
+          }
+          if ([string]::IsNullOrWhiteSpace($localSuffix)) {
+            throw "local_release_suffix is required, for example kakucoco.1."
+          }
+
+          $releaseTag = "$officialTag-$localSuffix"
+          "GIT_RELEASE_TAG=$releaseTag" >> $env:GITHUB_ENV
+          "RELEASE_TAG=$releaseTag" >> $env:GITHUB_ENV
+          "OFFICIAL_STABLE_TAG=$officialTag" >> $env:GITHUB_ENV
+          "LOCAL_RELEASE_SUFFIX=$localSuffix" >> $env:GITHUB_ENV
+          "RELEASE_NOTES_PATH=${{ inputs.release_notes_path }}" >> $env:GITHUB_ENV
 
       - name: Install protoc
         uses: arduino/setup-protoc@v3
@@ -62,7 +87,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist | Out-Null
-          Copy-Item script\windows\Output\WarpOssSetup.exe dist\WarpOssSetup-ime.exe
+          Copy-Item script\windows\Output\WarpOssSetup.exe dist\WarpOssSetup.exe
 
           $profileDir = "target\x86_64-pc-windows-msvc\rlto"
           $portableDir = "dist\WarpOssPortable"
@@ -80,15 +105,15 @@ jobs:
           Copy-Item app\assets\windows\x64\OpenConsole.exe "$portableDir\x64"
           Copy-Item "$profileDir\resources" $portableDir -Recurse
 
-          Compress-Archive -Path "$portableDir\*" -DestinationPath dist\WarpOssPortable-ime.zip -Force
+          Compress-Archive -Path "$portableDir\*" -DestinationPath dist\WarpOssPortable.zip -Force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: warp-oss-ime-windows
+          name: warp-oss-local-windows
           path: |
-            dist/WarpOssSetup-ime.exe
-            dist/WarpOssPortable-ime.zip
+            dist/WarpOssSetup.exe
+            dist/WarpOssPortable.zip
           retention-days: 7
 
       - name: Create GitHub Release
@@ -96,7 +121,22 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create $env:RELEASE_TAG dist\WarpOssSetup-ime.exe dist\WarpOssPortable-ime.zip `
-            --title "Warp Windows IME build $env:RELEASE_TAG" `
-            --notes "Built from public stable tag v0.2026.06.03.09.49.stable_00 with PR #10122 (Enable IME marked text on Windows). This is an unofficial OSS-channel build. Use WarpOssSetup-ime.exe for normal install, or extract WarpOssPortable-ime.zip and run warp-oss.exe for a no-installer test." `
-            --prerelease
+          $notes = "Built from official stable tag $env:OFFICIAL_STABLE_TAG with KaKuCoCo local patches. This is an unofficial OSS-channel build. Use WarpOssSetup.exe for normal install, or extract WarpOssPortable.zip and run warp-oss.exe for a no-installer test."
+          $assets = @("dist\WarpOssSetup.exe", "dist\WarpOssPortable.zip")
+          $ghArgs = @(
+            "release", "create", $env:RELEASE_TAG
+          ) + $assets + @(
+            "--title", "Warp Windows local build $env:RELEASE_TAG",
+            "--prerelease"
+          )
+
+          if (-not [string]::IsNullOrWhiteSpace($env:RELEASE_NOTES_PATH)) {
+            if (-not (Test-Path $env:RELEASE_NOTES_PATH)) {
+              throw "release_notes_path does not exist: $env:RELEASE_NOTES_PATH"
+            }
+            $ghArgs += @("--notes-file", $env:RELEASE_NOTES_PATH)
+          } else {
+            $ghArgs += @("--notes", $notes)
+          }
+
+          gh @ghArgs
