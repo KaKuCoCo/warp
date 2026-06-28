@@ -67,11 +67,9 @@ settings 可見入口加強隱藏與 fallback：
 - `cargo fmt`：通過。
 - `git diff --check`：通過。
 - `cargo check -p warp --bin warp-oss --features release_bundle,gui --target x86_64-pc-windows-msvc`：
-  本機無法執行，原因是缺少 MSVC `link.exe` 與 Windows SDK import libs，例如
-  `kernel32.lib`、`ntdll.lib`、`userenv.lib`、`ws2_32.lib`、`dbghelp.lib`。
-- `cargo test -p warp settings_view::mod_tests --no-default-features --features gui`：
-  本機無法執行，原因是缺少 MSVC `link.exe` / Visual Studio Build Tools。
-  這是目前 Windows host toolchain 問題，不是測試 assertion failure。
+  2026-06-28 修復本機 MSVC Build Tools / Windows SDK 後通過。
+- `cargo test -p warp settings_view::tests:: --no-default-features --features gui --target x86_64-pc-windows-msvc`：
+  2026-06-28 通過，49 passed。
 
 ### Settings navigation
 
