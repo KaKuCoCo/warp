@@ -27,10 +27,6 @@ build 穩定性，並讓未來更新官方 stable 時更容易 rebase。
   - `AgentProfiles`
   - `Knowledge`
 - Privacy 內的 cloud / official service controls。
-- Features 內強綁官方 Warp Agent 的 controls：
-  - agent task completion notifications
-  - in-app agent notifications
-  - auto-open code review pane after agent change
 
 保留：
 
@@ -41,6 +37,7 @@ build 穩定性，並讓未來更新官方 stable 時更容易 rebase。
 - Warpify。
 - About。
 - 非 agent 的 terminal features。
+- Features 頁面目前恢復 upstream controls，不做額外 local-only 隱藏。
 - Privacy 內的 `SecretRedactionWidget`。
 
 ## Patch 策略
@@ -66,7 +63,7 @@ build 穩定性，並讓未來更新官方 stable 時更容易 rebase。
 - `app/src/settings_view/privacy_page.rs`
   - 移除 cloud/account/telemetry widgets，同時保留有用的 local privacy controls
 - `app/src/settings_view/features_page.rs`
-  - 僅隱藏強綁官方 Warp Agent 的 controls
+  - 恢復 upstream controls，不做額外 local-only 隱藏
 - `app/src/workspace/mod.rs`
   - command palette / editable bindings 維持 upstream 行為；hidden page 是否可渲染交由
     settings page-level fallback 控制

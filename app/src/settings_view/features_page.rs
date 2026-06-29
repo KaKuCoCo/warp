@@ -43,8 +43,8 @@ use super::settings_page::{
     HEADER_PADDING, TOGGLE_BUTTON_RIGHT_PADDING,
 };
 use super::{
-    features, flags, is_local_warp_cloud_ui_disabled, render_beta_chip, DisplayCount,
-    SettingsAction, SettingsSection, ToggleSettingActionPair,
+    features, flags, render_beta_chip, DisplayCount, SettingsAction, SettingsSection,
+    ToggleSettingActionPair,
 };
 use crate::appearance::Appearance;
 use crate::default_terminal::DefaultTerminal;
@@ -301,8 +301,6 @@ pub fn init_actions_from_parent_view<T: Action + Clone>(
         )
         .with_enabled(|| FeatureFlag::AllowIgnoringInputSuggestions.is_enabled()),
     ];
-    let hide_warp_cloud_ui = is_local_warp_cloud_ui_disabled();
-
     toggle_binding_pairs.push(ToggleSettingActionPair::new(
         "reuse existing SSH ControlMaster in the Warp SSH wrapper",
         builder(SettingsAction::FeaturesPageToggle(
@@ -335,23 +333,21 @@ pub fn init_actions_from_parent_view<T: Action + Clone>(
                 .is_supported_on_current_platform(),
         ),
     );
-    if !hide_warp_cloud_ui {
-        toggle_binding_pairs.push(
-            ToggleSettingActionPair::new(
-                "agent task completion notifications",
-                builder(SettingsAction::FeaturesPageToggle(
-                    FeaturesPageAction::ToggleAgentTaskCompletedNotifications,
-                )),
-                &(context.to_owned() & id!(flags::NOTIFICATIONS_CONTEXT_FLAG)),
-                flags::AGENT_TASK_COMPLETED_NOTIFICATIONS_FLAG,
-            )
-            .is_supported_on_current_platform(
-                SessionSettings::as_ref(app)
-                    .notifications
-                    .is_supported_on_current_platform(),
-            ),
-        );
-    }
+    toggle_binding_pairs.push(
+        ToggleSettingActionPair::new(
+            "agent task completion notifications",
+            builder(SettingsAction::FeaturesPageToggle(
+                FeaturesPageAction::ToggleAgentTaskCompletedNotifications,
+            )),
+            &(context.to_owned() & id!(flags::NOTIFICATIONS_CONTEXT_FLAG)),
+            flags::AGENT_TASK_COMPLETED_NOTIFICATIONS_FLAG,
+        )
+        .is_supported_on_current_platform(
+            SessionSettings::as_ref(app)
+                .notifications
+                .is_supported_on_current_platform(),
+        ),
+    );
     toggle_binding_pairs.push(
         ToggleSettingActionPair::new(
             "needs-attention notifications",
@@ -383,19 +379,17 @@ pub fn init_actions_from_parent_view<T: Action + Clone>(
                 .is_supported_on_current_platform(),
         ),
     );
-    if !hide_warp_cloud_ui {
-        toggle_binding_pairs.push(
-            ToggleSettingActionPair::new(
-                "in-app agent notifications",
-                builder(SettingsAction::FeaturesPageToggle(
-                    FeaturesPageAction::ToggleAgentInAppNotifications,
-                )),
-                context,
-                flags::AGENT_IN_APP_NOTIFICATIONS_FLAG,
-            )
-            .with_enabled(|| FeatureFlag::HOANotifications.is_enabled()),
-        );
-    }
+    toggle_binding_pairs.push(
+        ToggleSettingActionPair::new(
+            "in-app agent notifications",
+            builder(SettingsAction::FeaturesPageToggle(
+                FeaturesPageAction::ToggleAgentInAppNotifications,
+            )),
+            context,
+            flags::AGENT_IN_APP_NOTIFICATIONS_FLAG,
+        )
+        .with_enabled(|| FeatureFlag::HOANotifications.is_enabled()),
+    );
 
     toggle_binding_pairs.push(
         ToggleSettingActionPair::new(
@@ -2667,7 +2661,6 @@ impl FeaturesPageView {
     }
 
     fn build_page(ctx: &mut ViewContext<Self>) -> PageType<Self> {
-        let hide_warp_cloud_ui = is_local_warp_cloud_ui_disabled();
         let mut general_widgets: Vec<Box<dyn SettingsWidget<View = Self>>> =
             vec![Box::new(DefaultSessionModeWidget::default())];
 
@@ -2741,8 +2734,7 @@ impl FeaturesPageView {
             general_widgets.push(Box::new(MouseScrollMultiplierWidget::default()));
         }
 
-        if !hide_warp_cloud_ui
-            && FeatureFlag::AutoOpenCodeReviewPane.is_enabled()
+        if FeatureFlag::AutoOpenCodeReviewPane.is_enabled()
             && !FeatureFlag::OpenWarpNewSettingsModes.is_enabled()
         {
             general_widgets.push(Box::new(AutoOpenCodeReviewPaneWidget::default()));
@@ -5255,22 +5247,20 @@ impl SettingsWidget for DesktopNotificationsWidget {
                 appearance,
             )];
 
-            if !is_local_warp_cloud_ui_disabled() {
-                toggles.insert(
-                    0,
-                    view.render_notification_toggle(
-                        session_settings
-                            .notifications
-                            .is_agent_task_completed_enabled,
-                        "Notify when an agent completes a task",
-                        FeaturesPageAction::ToggleAgentTaskCompletedNotifications,
-                        view.button_mouse_states
-                            .agent_task_completed_notifications_checkbox
-                            .clone(),
-                        appearance,
-                    ),
-                );
-            }
+            toggles.insert(
+                0,
+                view.render_notification_toggle(
+                    session_settings
+                        .notifications
+                        .is_agent_task_completed_enabled,
+                    "Notify when an agent completes a task",
+                    FeaturesPageAction::ToggleAgentTaskCompletedNotifications,
+                    view.button_mouse_states
+                        .agent_task_completed_notifications_checkbox
+                        .clone(),
+                    appearance,
+                ),
+            );
             toggles.push(
                 view.render_notification_toggle(
                     session_settings.notifications.is_needs_attention_enabled,
@@ -5296,7 +5286,7 @@ impl SettingsWidget for DesktopNotificationsWidget {
             column.add_child(render_group(toggles, appearance));
         }
 
-        if !is_local_warp_cloud_ui_disabled() && FeatureFlag::HOANotifications.is_enabled() {
+        if FeatureFlag::HOANotifications.is_enabled() {
             let ai_settings = AISettings::as_ref(app);
             let show_agent_notifications = *ai_settings.show_agent_notifications;
             column.add_child(render_body_item::<FeaturesPageAction>(

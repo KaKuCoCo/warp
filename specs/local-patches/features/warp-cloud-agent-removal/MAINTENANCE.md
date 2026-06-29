@@ -45,10 +45,9 @@ settings 可見入口加強隱藏與 fallback：
     privacy policy widget 的 settings surface。
   - command palette toggle bindings 只保留 secret redaction。
 - `app/src/settings_view/features_page.rs`
-  - local 模式只隱藏強綁官方 Warp Agent 的 controls：
-    agent/code-review auto-open、agent task completion notification、in-app agent notification。
-  - default session mode、AI context menu、slash commands、AI codebase outline、
-    terminal input message line、terminal zero-state block 與 needs-attention notifications 保留。
+  - 恢復 upstream controls，不做額外 local-only 隱藏。
+  - `auto_open_code_review_pane_on_first_agent_change`、agent task completion
+    notifications、in-app agent notifications 都不是 official Warp Agent 專用入口。
 - `app/src/workspace/mod.rs`
   - command palette / editable bindings 維持 upstream 行為，不做額外 local-only disable。
 - `app/src/uri/mod.rs`
@@ -159,17 +158,15 @@ upstream 入口行為；hidden page 的實際渲染仍由
 
 ### Features page
 
-`app/src/settings_view/features_page.rs` 目前仍有多個 AI/Agent 控制。
-local 模式只隱藏強綁官方 Warp Agent 的項目：
-
-- `AutoOpenCodeReviewPaneWidget`：agent change 後自動開 code review pane。
-- `DesktopNotificationsWidget` 中的 agent task completed notification。
-- `DesktopNotificationsWidget` 中的 in-app agent notifications。
-
-local 模式保留：
+`app/src/settings_view/features_page.rs` 目前仍有多個 AI/Agent 控制。這些設定沒有直接
+暴露 Warp login、billing、team、cloud platform 或 official Agent settings page，
+且部分會被 third-party CLI agents 使用，因此 local 模式目前全部保留：
 
 - `DefaultSessionModeWidget`。
+- `AutoOpenCodeReviewPaneWidget`。
+- `DesktopNotificationsWidget` 中的 agent task completed notification。
 - `DesktopNotificationsWidget` 中的 needs-attention notifications。
+- `DesktopNotificationsWidget` 中的 in-app agent notifications。
 - `AtContextMenuInTerminalModeWidget`：AI context menu。
 - `SlashCommandsInTerminalModeWidget`：依賴 `AISettings::is_any_ai_enabled`。
 - `OutlineCodebaseSymbolsForAtContextMenuWidget`：AI context codebase outline。
@@ -268,7 +265,7 @@ rg -n "analytics|crash|conversation|cloud|account|billing|team|agent|AI|Oz" app/
 保留：
 
 - `Appearance`
-- `Features`，但清理 Agent-only settings。
+- `Features`
 - `Keybindings`
 - `Warpify`
 - `Privacy`，但清理 cloud/official AI-only widgets。
@@ -356,12 +353,6 @@ diagnostics page。
 
 檔案：`app/src/settings_view/features_page.rs`
 
-隱藏強綁官方 Warp Agent 的 controls：
-
-- `AutoOpenCodeReviewPaneWidget`
-- agent task completion desktop notification option
-- in-app agent notification option
-
 目前保留：
 
 - `AtContextMenuInTerminalModeWidget`
@@ -371,6 +362,9 @@ diagnostics page。
 - `ShowTerminalZeroStateBlockWidget`
 - `DefaultSessionModeWidget`
 - needs-attention desktop notification option
+- `AutoOpenCodeReviewPaneWidget`
+- agent task completion desktop notification option
+- in-app agent notification option
 
 檢查後保留 non-agent terminal controls。
 

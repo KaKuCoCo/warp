@@ -13,7 +13,7 @@
   - command palette、URI deeplink、local-control 不再額外封鎖 hidden settings 入口；
     是否能實際渲染仍交由 settings page-level fallback 控制。
   - AI settings local 模式只渲染 `CLIAgentWidget`，Privacy 移除官方 cloud / service
-    controls，Features 僅隱藏強綁官方 Warp Agent 的 controls。
+    controls；Features 頁面恢復 upstream controls，不再做額外 local-only 隱藏。
   - 修復本機 Windows MSVC test build 會因空 compile-time feature flag 列表無法推斷
     型別的問題，並補上 `ai_page_handle` clone 讓 `cargo check` 通過。
 - 在 `local/feature/warp-cloud-agent-removal` 上重新盤點目前 `master` 的
