@@ -8,11 +8,11 @@ use typed_path::UnixPathBuf;
 use warp_core::channel::{Channel, ChannelState};
 use warp_util::path::{canonicalize_git_bash_path, is_msys2_path, warp_shell_path};
 
+use crate::terminal::ShellLaunchData;
 use crate::terminal::available_shells::AvailableShell;
 use crate::terminal::bootstrap::init_shell_script_for_shell;
 use crate::terminal::local_tty::docker_sandbox::DockerSandboxShellStarter;
 use crate::terminal::shell::{ShellName, ShellType};
-use crate::terminal::ShellLaunchData;
 use crate::util::path::resolve_executable;
 #[cfg(windows)]
 use crate::util::windows::{powershell_5_path, powershell_7_path, wsl_path};
@@ -108,7 +108,7 @@ impl ShellStarter {
                 ShellLaunchData::WSL { distro } => {
                     return Some(ShellStarterSourceOrWslName::WSLName {
                         distro_name: distro,
-                    })
+                    });
                 }
                 ShellLaunchData::MSYS2 {
                     executable_path,
@@ -121,7 +121,7 @@ impl ShellStarter {
                             shell_type,
                         }))
                         .into(),
-                    )
+                    );
                 }
                 ShellLaunchData::DockerSandbox {
                     sbx_path,
@@ -638,21 +638,35 @@ fn arguments_for_session_spawning_command(
                 .into(),
             ]
         }
-        ShellType::PowerShell => vec![
-            // When PowerShell starts a session, it writes "PowerShell <version>" to the PTY. This
-            // option suppresses that message.
-            "-NoLogo".to_owned().into(),
-            // Skip RC files. We load these manually later.
-            "-NoProfile".to_owned().into(),
-            // Normally, passing the "-Command" option causes the shell to exit after executing
-            // those commands. Passing "-NoExit" suppresses that so PowerShell remains interactive
-            // afterwards.
-            "-NoExit".to_owned().into(),
-            // This arg must be last, as everything positioned after the "-Command" flag is treated
-            // as the value for this arg.
-            "-Command".to_owned().into(),
-            init_shell_script_for_shell(ShellType::PowerShell, &crate::ASSETS).into(),
-        ],
+        ShellType::PowerShell => {
+            let mut args = vec![
+                // When PowerShell starts a session, it writes "PowerShell <version>" to the PTY. This
+                // option suppresses that message.
+                "-NoLogo".to_owned().into(),
+                // Skip RC files. We load these manually later.
+                "-NoProfile".to_owned().into(),
+            ];
+            if cfg!(windows) {
+                // LOCAL-PATCH(windows-oss-pwsh-bootstrap): official Windows releases sign pwsh.ps1,
+                // but OSS local builds do not. Use a process-scoped bypass so PowerShell can source
+                // Warp's bundled bootstrap script without changing the user's system execution policy.
+                args.extend([
+                    "-ExecutionPolicy".to_owned().into(),
+                    "Bypass".to_owned().into(),
+                ]);
+            }
+            args.extend([
+                // Normally, passing the "-Command" option causes the shell to exit after executing
+                // those commands. Passing "-NoExit" suppresses that so PowerShell remains interactive
+                // afterwards.
+                "-NoExit".to_owned().into(),
+                // This arg must be last, as everything positioned after the "-Command" flag is treated
+                // as the value for this arg.
+                "-Command".to_owned().into(),
+                init_shell_script_for_shell(ShellType::PowerShell, &crate::ASSETS).into(),
+            ]);
+            args
+        }
     }
 }
 
