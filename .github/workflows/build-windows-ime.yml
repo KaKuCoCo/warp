@@ -19,6 +19,11 @@ on:
         description: "Optional repo-relative release notes markdown file"
         required: false
         type: string
+      cache_shared_key:
+        description: "Rust cache shared key. Reuse an existing key when running baseline comparisons."
+        required: false
+        type: string
+        default: windows-ime-warp-oss
 
 permissions:
   contents: write
@@ -37,8 +42,9 @@ jobs:
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: windows-local-warp-oss
+          shared-key: ${{ inputs.cache_shared_key }}
           cache-on-failure: true
+          cache-workspace-crates: true
           workspaces: |
             . -> target
 
@@ -55,11 +61,15 @@ jobs:
           }
 
           $releaseTag = "$officialTag-$localSuffix"
+          $targetRef = "${{ inputs.ref }}".Trim()
+          $buildCommit = (git rev-parse HEAD).Trim()
           "GIT_RELEASE_TAG=$releaseTag" >> $env:GITHUB_ENV
           "RELEASE_TAG=$releaseTag" >> $env:GITHUB_ENV
           "OFFICIAL_STABLE_TAG=$officialTag" >> $env:GITHUB_ENV
           "LOCAL_RELEASE_SUFFIX=$localSuffix" >> $env:GITHUB_ENV
           "RELEASE_NOTES_PATH=${{ inputs.release_notes_path }}" >> $env:GITHUB_ENV
+          "TARGET_REF=$targetRef" >> $env:GITHUB_ENV
+          "BUILD_COMMIT=$buildCommit" >> $env:GITHUB_ENV
 
       - name: Install protoc
         uses: arduino/setup-protoc@v3
@@ -121,12 +131,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $notes = "Built from official stable tag $env:OFFICIAL_STABLE_TAG with KaKuCoCo local patches. This is an unofficial OSS-channel build. Use WarpOssSetup.exe for normal install, or extract WarpOssPortable.zip and run warp-oss.exe for a no-installer test."
+          $notes = "Built from target ref $env:TARGET_REF at commit $env:BUILD_COMMIT with Windows OSS channel. Official stable tag: $env:OFFICIAL_STABLE_TAG. Local suffix: $env:LOCAL_RELEASE_SUFFIX. Use WarpOssSetup.exe for normal install, or extract WarpOssPortable.zip and run warp-oss.exe for a no-installer test."
           $assets = @("dist\WarpOssSetup.exe", "dist\WarpOssPortable.zip")
           $ghArgs = @(
             "release", "create", $env:RELEASE_TAG
           ) + $assets + @(
             "--title", "Warp Windows local build $env:RELEASE_TAG",
+            "--target", $env:BUILD_COMMIT,
             "--prerelease"
           )
 

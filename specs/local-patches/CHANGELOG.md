@@ -11,6 +11,8 @@
   `features/warp-cloud-agent-removal/`。
 - 更新 Windows local build workflow，release tag 由官方 stable tag 加 local
   suffix 組成。
+- 更新 Windows local build workflow 的 cache/metadata 行為：可指定 Rust cache
+  shared key，並讓 GitHub Release target 指向實際 checkout 的 build commit。
 
 ## v0.2026.06.03.09.49.stable_00-ime-pr10122.2
 
