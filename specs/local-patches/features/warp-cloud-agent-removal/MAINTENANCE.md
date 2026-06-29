@@ -45,20 +45,17 @@ settings 可見入口加強隱藏與 fallback：
     privacy policy widget 的 settings surface。
   - command palette toggle bindings 只保留 secret redaction。
 - `app/src/settings_view/features_page.rs`
-  - local 模式隱藏 default session mode、agent/code-review auto-open、agent notification、
-    AI context menu、slash command agent mode、AI codebase outline、terminal input message line
-    與 terminal zero-state agent block。
-  - 一般 terminal features 與 long-running command notifications 保留。
+  - local 模式只隱藏強綁官方 Warp Agent 的 controls：
+    agent/code-review auto-open、agent task completion notification、in-app agent notification。
+  - default session mode、AI context menu、slash commands、AI codebase outline、
+    terminal input message line、terminal zero-state block 與 needs-attention notifications 保留。
 - `app/src/workspace/mod.rs`
-  - command palette 的 `Open Settings: AI` 在本地模式改為
-    `Open Settings: Third party CLI agents`。
-  - Account、Shared Blocks、Teams、Billing、Referrals、Environments、Invite People bindings
-    在本地模式停用。
+  - command palette / editable bindings 維持 upstream 行為，不做額外 local-only disable。
 - `app/src/uri/mod.rs`
-  - `warp://settings/warp_agent` 在本地模式導到 `ThirdPartyCLIAgents`。
-  - `teams`、`billing_and_usage`、`platform`、`environments` 不再打開 hidden settings。
+  - settings deeplink 維持 upstream 行為，不做額外 local-only redirect 或 disable。
 - `app/src/local_control/handlers/app_state.rs`
-  - `surface.settings.open` 對 hidden sections 回傳 `UnsupportedAction`。
+  - `surface.settings.open` 維持 upstream 行為；仍保留 upstream 原本對 `WarpDrive`
+    的限制。
 - `app/src/settings_view/mod_tests.rs`
   - 更新 local sidebar/search/fallback 測試。
 
@@ -90,8 +87,9 @@ settings 可見入口加強隱藏與 fallback：
 - `initial_page` 與 `set_and_refresh_current_page_internal` 目前會把
   `SettingsSection::AI` fallback 到 `WarpAgent`。本地模式要改成 fallback 到
   `ThirdPartyCLIAgents` 或其他保留頁，避免舊 deeplink/restore 進入官方 Agent。
-- `should_render_page` 只委派到各頁自己的 `should_render()`；若只改 sidebar，
-  search、deeplink、local-control、command palette 仍可能進入 hidden sections。
+- `should_render_page` 與 `set_and_refresh_current_page_internal()` 是 hidden page 的最後
+  防線；command palette、deeplink、local-control 可維持 upstream 入口行為，但不能讓
+  hidden section 最終渲染出來。
 
 ### Search 與 keyboard navigation
 
@@ -109,7 +107,10 @@ settings 可見入口加強隱藏與 fallback：
 
 ### Deeplink / command palette / local-control
 
-只隱藏 sidebar 不夠，以下入口也會直接開 settings section：
+本 patch 目前不再對這三種入口做額外 local-only 封鎖。原因是使用者希望保留
+upstream 入口行為；hidden page 的實際渲染仍由
+`SettingsView::set_and_refresh_current_page_internal()` 與
+`should_render_page()` 的 fallback 決定。
 
 - `app/src/uri/mod.rs`
   - `warp://settings/teams`
@@ -117,20 +118,17 @@ settings 可見入口加強隱藏與 fallback：
   - `warp://settings/environments`
   - `warp://settings/platform`
   - `warp://settings/warp_agent`
-  - `settings_section_for_simple_subpage()` 目前把 `billing_and_usage`、`platform`、
-    `warp_agent` 映射到需要隱藏的 sections。
+  - `settings_section_for_simple_subpage()` 維持 upstream mapping。
 - `app/src/workspace/mod.rs`
   - command palette / editable bindings 目前註冊 Account、Shared Blocks、Teams、
     AI、Billing、Referrals、Environments、MCP Servers 等 settings actions。
-  - 本地模式應移除或 disable cloud/account/official-agent 相關 actions，保留
-    Appearance、Features、Keybindings、About、Warpify、MCP Servers，以及
-    third-party CLI agents 需要的入口。
+  - 本地模式不在 command palette 層移除或 disable 這些 actions。
 - `app/src/local_control/handlers/app_state.rs`
   - `surface.settings.open` 會用 `SettingsSection::from_str` 解析任意 page。
-  - 目前只特別禁止 `WarpDrive`；本地模式應禁止或 redirect hidden sections。
+  - 目前只保留 upstream 原本對 `WarpDrive` 的限制。
 - `app/src/root_view.rs` 和 `app/src/workspace/view.rs`
   - root/workspace action 會直接 dispatch `WorkspaceAction::ShowSettingsPage(section)`。
-  - 建議在 `SettingsView::set_and_refresh_current_page_internal` 加本地 fallback，
+  - 本地 fallback 放在 `SettingsView::set_and_refresh_current_page_internal`，
     作為所有入口的最後防線。
 
 ### AI / Agents page
@@ -161,15 +159,21 @@ settings 可見入口加強隱藏與 fallback：
 
 ### Features page
 
-`app/src/settings_view/features_page.rs` 目前仍有多個 AI/Agent 控制：
+`app/src/settings_view/features_page.rs` 目前仍有多個 AI/Agent 控制。
+local 模式只隱藏強綁官方 Warp Agent 的項目：
 
-- `DefaultSessionModeWidget`：包含 agent terminal/session mode。
 - `AutoOpenCodeReviewPaneWidget`：agent change 後自動開 code review pane。
-- `DesktopNotificationsWidget`：包含 agent completed / needs attention /
-  in-app agent notifications。
+- `DesktopNotificationsWidget` 中的 agent task completed notification。
+- `DesktopNotificationsWidget` 中的 in-app agent notifications。
+
+local 模式保留：
+
+- `DefaultSessionModeWidget`。
+- `DesktopNotificationsWidget` 中的 needs-attention notifications。
 - `AtContextMenuInTerminalModeWidget`：AI context menu。
 - `SlashCommandsInTerminalModeWidget`：依賴 `AISettings::is_any_ai_enabled`。
 - `OutlineCodebaseSymbolsForAtContextMenuWidget`：AI context codebase outline。
+- `ShowTerminalInputMessageLineWidget`。
 - `ShowTerminalZeroStateBlockWidget`：由 `FeatureFlag::AgentView` / AI 設定控制。
 
 非 agent terminal 功能仍應保留。
@@ -212,8 +216,8 @@ settings 可見入口加強隱藏與 fallback：
    `is_local_warp_cloud_ui_disabled()`。
 4. 重新隱藏 account、billing、teams、referrals、shared blocks、Warp Drive、
    cloud platform 與官方 Warp Agent pages 的 settings navigation entries。
-5. 重新檢查 page-level routing，確保 search、command palette 與 deeplinks 不能進入
-   hidden pages。
+5. 重新檢查 page-level routing，確保 sidebar/search/direct navigation 仍不渲染
+   hidden pages；command palette、deeplinks、local-control 維持 upstream 入口行為。
 6. 重新檢查 `AISettingsPageView::build_page`，此 patch 第一階段只保留
    third-party CLI agents。
 7. 重新檢查 Features 與 Privacy pages 是否新增 upstream cloud、AI、Agent、Oz、
@@ -352,15 +356,21 @@ diagnostics page。
 
 檔案：`app/src/settings_view/features_page.rs`
 
-隱藏 Agent / Warp AI-specific controls：
+隱藏強綁官方 Warp Agent 的 controls：
 
 - `AutoOpenCodeReviewPaneWidget`
-- agent 相關 desktop notification options
+- agent task completion desktop notification option
+- in-app agent notification option
+
+目前保留：
+
 - `AtContextMenuInTerminalModeWidget`
 - `SlashCommandsInTerminalModeWidget`
 - `OutlineCodebaseSymbolsForAtContextMenuWidget`
+- `ShowTerminalInputMessageLineWidget`
 - `ShowTerminalZeroStateBlockWidget`
-- `DefaultSessionModeWidget` 內 agent-related parts
+- `DefaultSessionModeWidget`
+- needs-attention desktop notification option
 
 檢查後保留 non-agent terminal controls。
 
@@ -402,7 +412,8 @@ metadata 或 cloud sharing。
 - App 可啟動。
 - Windows 中文 IME candidate/preedit 正常。
 - Settings sidebar 隱藏所有已移除 sections。
-- Search、command palette 與 deeplinks 不能進入 hidden pages。
+- Search 與 sidebar/direct navigation 不顯示 hidden pages；command palette、
+  deeplinks、local-control 不做額外 local-only 封鎖。
 - Third-party CLI agents settings page 可進入。
 - MCP Servers settings page 可進入。
 - 基本 terminal workflow 正常。

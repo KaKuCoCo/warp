@@ -33,7 +33,7 @@ use crate::local_control::LocalControlBridge;
 use crate::palette::PaletteMode;
 use crate::pane_group::{ActivationReason, Direction, PaneGroupAction};
 use crate::server::telemetry::PaletteSource;
-use crate::settings_view::{is_local_warp_cloud_ui_disabled, SettingsSection};
+use crate::settings_view::SettingsSection;
 #[cfg(feature = "local_fs")]
 use crate::util::file::external_editor::EditorSettings;
 #[cfg(feature = "local_fs")]
@@ -692,14 +692,10 @@ fn settings_section(page: String) -> Result<SettingsSection, ControlError> {
             format!("surface.settings.open cannot resolve settings page {page:?}"),
         )
     })?;
-    if section == SettingsSection::WarpDrive || section.is_hidden_by_local_warp_cloud_ui() {
+    if section == SettingsSection::WarpDrive {
         return Err(ControlError::new(
             ErrorCode::UnsupportedAction,
-            if is_local_warp_cloud_ui_disabled() {
-                "surface.settings.open does not open disabled local Warp cloud settings"
-            } else {
-                "surface.settings.open does not open Warp Drive settings"
-            },
+            "surface.settings.open does not open Warp Drive settings",
         ));
     }
     Ok(section)

@@ -27,7 +27,10 @@ build 穩定性，並讓未來更新官方 stable 時更容易 rebase。
   - `AgentProfiles`
   - `Knowledge`
 - Privacy 內的 cloud / official service controls。
-- Features 內的 Agent / Warp AI 專用 controls。
+- Features 內強綁官方 Warp Agent 的 controls：
+  - agent task completion notifications
+  - in-app agent notifications
+  - auto-open code review pane after agent change
 
 保留：
 
@@ -63,13 +66,16 @@ build 穩定性，並讓未來更新官方 stable 時更容易 rebase。
 - `app/src/settings_view/privacy_page.rs`
   - 移除 cloud/account/telemetry widgets，同時保留有用的 local privacy controls
 - `app/src/settings_view/features_page.rs`
-  - 隱藏 agent / Warp AI-specific controls
+  - 僅隱藏強綁官方 Warp Agent 的 controls
 - `app/src/workspace/mod.rs`
-  - command palette / editable bindings 入口收斂
+  - command palette / editable bindings 維持 upstream 行為；hidden page 是否可渲染交由
+    settings page-level fallback 控制
 - `app/src/uri/mod.rs`
-  - settings deeplink 收斂
+  - settings deeplink 維持 upstream 行為；hidden page 是否可渲染交由 settings
+    page-level fallback 控制
 - `app/src/local_control/handlers/app_state.rs`
-  - `surface.settings.open` 禁止 hidden pages
+  - `surface.settings.open` 維持 upstream 行為，仍保留 upstream 原本對 `WarpDrive`
+    的限制
 - `app/src/settings_view/mod_tests.rs`
   - local sidebar / search / fallback 行為測試
 - 候選的整頁 settings：
@@ -98,7 +104,8 @@ cargo check -p warp --bin warp-oss --features release_bundle,gui --target x86_64
 - App 可啟動。
 - Settings sidebar 不再顯示 Warp login/account、billing、teams、referrals、
   shared blocks、Warp Drive、cloud platform 或官方 Warp Agent pages。
-- Search、command palette 與 deeplinks 不能導向 hidden pages。
+- Search 與 sidebar/direct navigation 不顯示 hidden pages；command palette、
+  deeplinks、local-control 不再做額外 local-only 封鎖。
 - Third-party CLI agents settings page 仍可進入。
 - Third-party CLI agent toolbar settings 仍可設定。
 - MCP Servers settings 仍可進入。

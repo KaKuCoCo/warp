@@ -1487,18 +1487,6 @@ pub fn init(app: &mut AppContext) {
 fn add_open_setting_pages_as_editable_binding(app: &mut AppContext) {
     use warpui::keymap::macros::*;
 
-    let hide_warp_cloud_ui = settings_view::is_local_warp_cloud_ui_disabled();
-    let ai_settings_page = if hide_warp_cloud_ui {
-        SettingsSection::ThirdPartyCLIAgents
-    } else {
-        SettingsSection::WarpAgent
-    };
-    let ai_settings_description = if hide_warp_cloud_ui {
-        "Open Settings: Third party CLI agents"
-    } else {
-        "Open Settings: AI"
-    };
-
     // Add the ability to open setting modals to the command palette.
     app.register_editable_bindings([
         EditableBinding::new(
@@ -1515,7 +1503,6 @@ fn add_open_setting_pages_as_editable_binding(app: &mut AppContext) {
             "Open Settings: Account",
             WorkspaceAction::ShowSettingsPage(SettingsSection::Account),
         )
-        .with_enabled(|| !settings_view::is_local_warp_cloud_ui_disabled())
         .with_context_predicate(id!("Workspace"))
         .with_group(bindings::BindingGroup::Settings.as_str())
         .with_custom_action(CustomAction::ShowAccount),
@@ -1541,7 +1528,6 @@ fn add_open_setting_pages_as_editable_binding(app: &mut AppContext) {
                 .with_custom_description(bindings::MAC_MENUS_CONTEXT, "View Shared Blocks..."),
             WorkspaceAction::ShowSettingsPage(SettingsSection::SharedBlocks),
         )
-        .with_enabled(|| !settings_view::is_local_warp_cloud_ui_disabled())
         .with_group(bindings::BindingGroup::Settings.as_str())
         .with_context_predicate(id!("Workspace"))
         .with_custom_action(CustomAction::ViewSharedBlocks),
@@ -1571,7 +1557,6 @@ fn add_open_setting_pages_as_editable_binding(app: &mut AppContext) {
                 .with_custom_description(bindings::MAC_MENUS_CONTEXT, "Open Team Settings"),
             WorkspaceAction::ShowSettingsPage(SettingsSection::Teams),
         )
-        .with_enabled(|| !settings_view::is_local_warp_cloud_ui_disabled())
         .with_group(bindings::BindingGroup::Settings.as_str())
         .with_custom_action(CustomAction::OpenTeamSettings)
         .with_context_predicate(id!("Workspace")),
@@ -1592,8 +1577,8 @@ fn add_open_setting_pages_as_editable_binding(app: &mut AppContext) {
         .with_context_predicate(id!("Workspace")),
         EditableBinding::new(
             "workspace:show_ai_settings_page",
-            BindingDescription::new(ai_settings_description),
-            WorkspaceAction::ShowSettingsPage(ai_settings_page),
+            BindingDescription::new("Open Settings: AI"),
+            WorkspaceAction::ShowSettingsPage(SettingsSection::WarpAgent),
         )
         .with_enabled(|| FeatureFlag::AgentMode.is_enabled())
         .with_group(bindings::BindingGroup::Settings.as_str())
@@ -1603,7 +1588,6 @@ fn add_open_setting_pages_as_editable_binding(app: &mut AppContext) {
             BindingDescription::new("Open Settings: Billing and usage"),
             WorkspaceAction::ShowSettingsPage(SettingsSection::BillingAndUsage),
         )
-        .with_enabled(|| !settings_view::is_local_warp_cloud_ui_disabled())
         .with_group(bindings::BindingGroup::Settings.as_str())
         .with_context_predicate(id!("Workspace")),
         EditableBinding::new(
@@ -1618,7 +1602,6 @@ fn add_open_setting_pages_as_editable_binding(app: &mut AppContext) {
             BindingDescription::new("Open Settings: Referrals"),
             WorkspaceAction::ShowSettingsPage(SettingsSection::Referrals),
         )
-        .with_enabled(|| !settings_view::is_local_warp_cloud_ui_disabled())
         .with_group(bindings::BindingGroup::Settings.as_str())
         .with_context_predicate(id!("Workspace")),
         EditableBinding::new(
@@ -1626,7 +1609,6 @@ fn add_open_setting_pages_as_editable_binding(app: &mut AppContext) {
             BindingDescription::new("Open Settings: Environments"),
             WorkspaceAction::ShowSettingsPage(SettingsSection::CloudEnvironments),
         )
-        .with_enabled(|| !settings_view::is_local_warp_cloud_ui_disabled())
         .with_group(bindings::BindingGroup::Settings.as_str())
         .with_context_predicate(id!("Workspace")),
         EditableBinding::new(
@@ -1657,7 +1639,6 @@ fn add_overflow_menu_items_as_editable_binding(app: &mut AppContext) {
             "Invite People...",
             WorkspaceAction::ShowReferralSettingsPage,
         )
-        .with_enabled(|| !settings_view::is_local_warp_cloud_ui_disabled())
         .with_context_predicate(id!("Workspace"))
         .with_custom_action(CustomAction::ReferAFriend),
         EditableBinding::new(
