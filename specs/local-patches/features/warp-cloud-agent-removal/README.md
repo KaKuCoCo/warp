@@ -46,6 +46,8 @@ build 穩定性，並讓未來更新官方 stable 時更容易 rebase。
 - 第一階段保留底層 data models 與 persisted settings schemas。
 - 新增集中 helper，例如 `is_local_warp_cloud_ui_disabled()`，所有 local-only
   隱藏行為都經由此 helper。
+- 後續 gate 集中到 `app/src/local_patches.rs`，讓 Settings、Privacy 與 telemetry
+  enforcement 共用同一個 local patch switch。
 - 避免散落 magic `cfg` checks 或不相關 feature flags。
 - 在 helper 或 local-only gate 附近加上簡短
   `LOCAL-PATCH(warp-cloud-agent-removal)` 註解，讓未來 rebase 可快速找到 patch。
@@ -53,10 +55,19 @@ build 穩定性，並讓未來更新官方 stable 時更容易 rebase。
 ## 主要實作區域
 
 - `app/src/settings_view/mod.rs`
-  - `is_local_warp_cloud_ui_disabled()`
+  - `is_local_warp_cloud_ui_disabled()`，目前 re-export
+    `local_patches::is_warp_cloud_agent_removal_enabled`
   - `SettingsView::new`
   - `SettingsSection::ai_subpages()`
   - hidden / deep-linked pages 的 navigation fallback
+- `app/src/local_patches.rs`
+  - `is_warp_cloud_agent_removal_enabled()`
+  - `coerce_official_warp_privacy_setting()`
+- `app/src/settings/privacy.rs`
+  - official Warp telemetry、crash reporting、cloud conversation storage 預設與 runtime
+    狀態強制為 disabled
+- `app/src/ai/blocklist/telemetry_banner.rs`
+  - local 模式下停用 AI UGC telemetry collection
 - `app/src/settings_view/ai_page.rs`
   - `AISettingsPageView::build_page`
   - 保留 `CLIAgentWidget`
@@ -100,7 +111,9 @@ cargo check -p warp --bin warp-oss --features release_bundle,gui --target x86_64
 
 - App 可啟動。
 - Settings sidebar 不再顯示 Warp login/account、billing、teams、referrals、
-  shared blocks、Warp Drive、cloud platform 或官方 Warp Agent pages。
+  shared blocks、Warp Drive、Privacy、cloud platform 或官方 Warp Agent pages。
+- Official telemetry、crash reporting、cloud conversation storage 與 AI UGC telemetry
+  維持 disabled。
 - Search 與 sidebar/direct navigation 不顯示 hidden pages；command palette、
   deeplinks、local-control 不再做額外 local-only 封鎖。
 - Third-party CLI agents settings page 仍可進入。

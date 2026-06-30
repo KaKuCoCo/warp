@@ -155,6 +155,7 @@ fn local_warp_cloud_ui_hides_official_cloud_and_agent_sections() {
         SettingsSection::Referrals,
         SettingsSection::SharedBlocks,
         SettingsSection::WarpDrive,
+        SettingsSection::Privacy,
         SettingsSection::WarpAgent,
         SettingsSection::AgentProfiles,
         SettingsSection::AgentMCPServers,
@@ -174,7 +175,6 @@ fn local_warp_cloud_ui_hides_official_cloud_and_agent_sections() {
         SettingsSection::Appearance,
         SettingsSection::Features,
         SettingsSection::Keybindings,
-        SettingsSection::Privacy,
         SettingsSection::About,
     ] {
         assert!(
@@ -704,7 +704,6 @@ fn realistic_nav_items() -> Vec<SettingsNavItem> {
         SettingsNavItem::Page(SettingsSection::Features),
         SettingsNavItem::Page(SettingsSection::Keybindings),
         SettingsNavItem::Page(SettingsSection::Warpify),
-        SettingsNavItem::Page(SettingsSection::Privacy),
         SettingsNavItem::Page(SettingsSection::About),
     ]
 }
@@ -725,8 +724,8 @@ fn collapsed_umbrella_is_a_single_nav_stop() {
     let stops = build_nav_stops(&nav_items, |_| true);
 
     // Expect: <Agents umbrella>, MCPServers, <Code umbrella>, Appearance,
-    // Features, Keybindings, Warpify, Privacy, About.
-    assert_eq!(stops.len(), 9);
+    // Features, Keybindings, Warpify, About.
+    assert_eq!(stops.len(), 8);
     assert!(matches!(
         stops[0],
         NavStop::CollapsedUmbrella {
@@ -751,7 +750,7 @@ fn collapsed_umbrella_is_a_single_nav_stop() {
         stops[3],
         NavStop::Section(SettingsSection::Appearance)
     ));
-    assert!(matches!(stops[8], NavStop::Section(SettingsSection::About)));
+    assert!(matches!(stops[7], NavStop::Section(SettingsSection::About)));
 }
 
 #[test]
@@ -778,7 +777,6 @@ fn expanded_umbrella_produces_section_stop_per_subpage() {
             "Features",
             "Keybindings",
             "Warpify",
-            "Privacy",
             "About",
         ]
     );

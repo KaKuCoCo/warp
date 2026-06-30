@@ -67,6 +67,27 @@ settings 可見入口加強隱藏與 fallback：
 - `cargo test -p warp settings_view::tests:: --no-default-features --features gui --target x86_64-pc-windows-msvc`：
   2026-06-28 通過，49 passed。
 
+## 2026-06-30 Privacy / telemetry enforcement
+
+後續把 local gate 集中到 `app/src/local_patches.rs`，並把官方 cloud/account 相關
+privacy surface 從「只隱藏 UI」推進到 runtime 強制 disabled：
+
+- `app/src/local_patches.rs`
+  - `is_warp_cloud_agent_removal_enabled()` 作為 local patch 主 gate。
+  - `coerce_official_warp_privacy_setting()` 將官方 Warp privacy 設定值壓成 `false`。
+- `app/src/settings_view/mod.rs`
+  - `is_local_warp_cloud_ui_disabled` re-export local patch gate。
+  - local sidebar 額外隱藏 `Privacy`。
+- `app/src/settings/privacy.rs`
+  - telemetry、crash reporting、cloud conversation storage default 改為 `false`。
+  - 初始化、snapshot、setter 與 refresh-to-default 皆套用 local coercion。
+  - 啟動時若 persisted settings 為 `true`，會寫回 `false`。
+- `app/src/ai/blocklist/telemetry_banner.rs`
+  - local 模式下 `should_collect_ai_ugc_telemetry` 直接回傳 `false`。
+
+維護時如果 upstream 改動 Privacy settings schema 或 telemetry snapshot，必須重新確認
+上述所有路徑仍被 local gate 壓住。
+
 ### Settings navigation
 
 主要入口在 `app/src/settings_view/mod.rs`：
@@ -210,7 +231,7 @@ upstream 入口行為；hidden page 的實際渲染仍由
    ```
 
 3. 還原集中式 local gate，例如
-   `is_local_warp_cloud_ui_disabled()`。
+   `is_local_warp_cloud_ui_disabled()` / `is_warp_cloud_agent_removal_enabled()`。
 4. 重新隱藏 account、billing、teams、referrals、shared blocks、Warp Drive、
    cloud platform 與官方 Warp Agent pages 的 settings navigation entries。
 5. 重新檢查 page-level routing，確保 sidebar/search/direct navigation 仍不渲染
@@ -226,7 +247,7 @@ upstream 入口行為；hidden page 的實際渲染仍由
 每次官方 stable 更新後使用以下搜尋：
 
 ```powershell
-rg -n "LOCAL-PATCH\\(warp-cloud-agent-removal\\)|is_local_warp_cloud_ui_disabled" app crates
+rg -n "LOCAL-PATCH\\(warp-cloud-agent-removal\\)|is_local_warp_cloud_ui_disabled|is_warp_cloud_agent_removal_enabled|coerce_official_warp_privacy_setting" app crates
 rg -n "Account|BillingAndUsage|Teams|Referrals|SharedBlocks|WarpDrive|CloudEnvironments|OzCloudAPIKeys" app/src/settings_view
 rg -n "WarpAgent|AgentProfiles|Knowledge|ThirdPartyCLIAgents|CLIAgentWidget|AISettingsPageView::build_page" app/src/settings_view/ai_page.rs app/src/settings_view/mod.rs
 rg -n "analytics|crash|conversation|cloud|account|billing|team|agent|AI|Oz" app/src/settings_view/privacy_page.rs app/src/settings_view/features_page.rs
@@ -239,6 +260,9 @@ rg -n "analytics|crash|conversation|cloud|account|billing|team|agent|AI|Oz" app/
   rendering。
 - `app/src/settings_view/main_page.rs` 內的 Account page widgets。
 - `app/src/settings_view/privacy_page.rs` 內的 Privacy widgets。
+- `app/src/settings/privacy.rs` 內的 telemetry、crash reporting、cloud conversation
+  storage persisted/runtime state。
+- `app/src/ai/blocklist/telemetry_banner.rs` 內的 AI UGC telemetry collection gate。
 - `app/src/settings_view/features_page.rs` 內的 Agent/Warp AI feature controls。
 - Billing、teams、referrals、shared blocks、Warp Drive、cloud environments 與 Oz
   cloud API keys 的 full settings pages。
@@ -268,7 +292,8 @@ rg -n "analytics|crash|conversation|cloud|account|billing|team|agent|AI|Oz" app/
 - `Features`
 - `Keybindings`
 - `Warpify`
-- `Privacy`，但清理 cloud/official AI-only widgets。
+- `Privacy` 目前 local sidebar 隱藏；底層 privacy runtime 仍強制關閉 official
+  telemetry/cloud storage。
 - `About`
 - `MCP Servers`
 
@@ -406,6 +431,8 @@ metadata 或 cloud sharing。
 - App 可啟動。
 - Windows 中文 IME candidate/preedit 正常。
 - Settings sidebar 隱藏所有已移除 sections。
+- Official telemetry、crash reporting、cloud conversation storage 與 AI UGC telemetry
+  維持 disabled。
 - Search 與 sidebar/direct navigation 不顯示 hidden pages；command palette、
   deeplinks、local-control 不做額外 local-only 封鎖。
 - Third-party CLI agents settings page 可進入。

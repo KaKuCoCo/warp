@@ -7,6 +7,7 @@ use warpui::ui_components::button::ButtonVariant;
 use warpui::ui_components::components::{Coords, UiComponent, UiComponentStyles};
 use warpui::{AppContext, Element, Entity, SingletonEntity, View, ViewContext};
 
+use crate::local_patches;
 use crate::settings_view::SettingsSection;
 use crate::terminal::view::TerminalAction;
 use crate::ui_components::buttons::icon_button;
@@ -193,6 +194,10 @@ impl Entity for TelemetryBanner {
 /// require this check, but an event that logs the input buffer for natural language detection
 /// _does_ need to check this.
 pub fn should_collect_ai_ugc_telemetry(app: &AppContext, is_telemetry_enabled: bool) -> bool {
+    if local_patches::is_warp_cloud_agent_removal_enabled() {
+        return false;
+    }
+
     match UserWorkspaces::as_ref(app).get_ugc_collection_enablement_setting() {
         UgcCollectionEnablementSetting::Disable => false,
         UgcCollectionEnablementSetting::Enable => true,

@@ -19,9 +19,18 @@ on:
         description: "Optional repo-relative release notes markdown file"
         required: false
         type: string
+      save_build_cache:
+        description: "Save the Rust build cache from this run"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
+
+concurrency:
+  group: windows-local-warp-${{ inputs.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -37,8 +46,9 @@ jobs:
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: windows-local-warp-oss
+          shared-key: windows-ime-warp-oss
           cache-on-failure: true
+          save-if: ${{ inputs.save_build_cache || github.ref == 'refs/heads/master' }}
           workspaces: |
             . -> target
 

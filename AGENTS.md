@@ -37,6 +37,9 @@ patch 的例子，不是此 fork 的唯一目標。
 - 每個 upgrade 或 feature branch 都使用獨立 worktree。
 - 預設 worktree root：`$WARP_WORKTREES`。
 - 預設路徑格式：`$WARP_WORKTREES/<branch-slug>`。
+- 本機開發建議讓所有 worktree 共用同一個 Cargo target directory，避免每個
+  worktree 各自重建大型 Rust artifacts。預設建議路徑：
+  `D:\programming\warp-cargo-target`。
 - 分支 merge 且不再需要後，移除 worktree 並執行
   `git worktree prune`。
 
@@ -46,6 +49,22 @@ patch 的例子，不是此 fork 的唯一目標。
 git status --short --branch
 git worktree list
 ```
+
+開始本機 build 前，確認目前 shell 已設定共用 target：
+
+```powershell
+$env:CARGO_TARGET_DIR="D:\programming\warp-cargo-target"
+```
+
+若要長期套用到新的 PowerShell session，可設定使用者環境變數：
+
+```powershell
+[Environment]::SetEnvironmentVariable("CARGO_TARGET_DIR", "D:\programming\warp-cargo-target", "User")
+```
+
+同一個 `CARGO_TARGET_DIR` 不建議同時給多個 worktree 平行執行大型 build。若需要
+平行 build，請暫時改用不同 target directory，避免 lock contention 或 artifacts
+互相覆蓋導致重編。
 
 除非使用者明確要求，不要刪除或 reset 其他 worktree 裡的使用者改動。
 

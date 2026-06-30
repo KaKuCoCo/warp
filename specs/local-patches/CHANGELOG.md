@@ -14,6 +14,9 @@
     是否能實際渲染仍交由 settings page-level fallback 控制。
   - AI settings local 模式只渲染 `CLIAgentWidget`，Privacy 移除官方 cloud / service
     controls；Features 頁面恢復 upstream controls，不再做額外 local-only 隱藏。
+  - 將 local patch gate 集中到 `app/src/local_patches.rs`，並強制關閉 official
+    telemetry、crash reporting、cloud conversation storage 與 AI UGC telemetry。
+  - local sidebar 額外隱藏 Privacy，避免殘留 official Warp service controls。
   - 修復本機 Windows MSVC test build 會因空 compile-time feature flag 列表無法推斷
     型別的問題，並補上 `ai_page_handle` clone 讓 `cargo check` 通過。
 - 在 `local/feature/warp-cloud-agent-removal` 上重新盤點目前 `master` 的

@@ -282,11 +282,7 @@ pub enum SettingsSection {
     OzCloudAPIKeys,
 }
 
-// LOCAL-PATCH(warp-cloud-agent-removal): keep this helper as the single grep
-// anchor for local-only Settings UI hiding.
-pub(crate) fn is_local_warp_cloud_ui_disabled() -> bool {
-    true
-}
+pub(crate) use crate::local_patches::is_warp_cloud_agent_removal_enabled as is_local_warp_cloud_ui_disabled;
 
 use std::fmt::{self, Display};
 
@@ -394,6 +390,7 @@ impl SettingsSection {
                     | Self::SharedBlocks
                     | Self::Teams
                     | Self::WarpDrive
+                    | Self::Privacy
                     | Self::WarpAgent
                     | Self::AgentProfiles
                     | Self::AgentMCPServers
@@ -413,6 +410,7 @@ impl SettingsSection {
                     | Self::SharedBlocks
                     | Self::Teams
                     | Self::WarpDrive
+                    | Self::Privacy
                     | Self::CloudEnvironments
                     | Self::OzCloudAPIKeys
             )
@@ -1386,7 +1384,6 @@ impl SettingsView {
                 SettingsNavItem::Page(SettingsSection::Features),
                 SettingsNavItem::Page(SettingsSection::Keybindings),
                 SettingsNavItem::Page(SettingsSection::Warpify),
-                SettingsNavItem::Page(SettingsSection::Privacy),
                 SettingsNavItem::Page(SettingsSection::About),
             ]
         } else {

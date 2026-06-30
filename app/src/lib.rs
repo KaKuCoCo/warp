@@ -122,6 +122,7 @@ pub mod input_suggestions;
 pub mod integration_testing;
 pub mod keyboard;
 pub mod launch_configs;
+mod local_patches;
 pub mod pane_group;
 pub mod resource_center;
 pub mod root_view;

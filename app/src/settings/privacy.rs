@@ -16,6 +16,7 @@ use crate::ai::blocklist::telemetry_banner::should_collect_ai_ugc_telemetry;
 use crate::auth::auth_state::AuthState;
 use crate::auth::AuthStateProvider;
 use crate::cloud_object::model::persistence::CloudModel;
+use crate::local_patches;
 use crate::report_error;
 use crate::server::cloud_objects::update_manager::UpdateManager;
 #[cfg(test)]
@@ -91,7 +92,7 @@ impl settings_value::SettingsValue for CustomSecretRegex {}
 define_settings_group!(WarpDrivePrivacySettings, settings: [
     is_telemetry_enabled: IsTelemetryEnabled {
         type: bool,
-        default: true,
+        default: false,
         supported_platforms: SupportedPlatforms::ALL,
         sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::No),
         private: false,
@@ -101,7 +102,7 @@ define_settings_group!(WarpDrivePrivacySettings, settings: [
     },
     is_crash_reporting_enabled: IsCrashReportingEnabled {
         type: bool,
-        default: true,
+        default: false,
         supported_platforms: SupportedPlatforms::ALL,
         sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::No),
         private: false,
@@ -111,7 +112,7 @@ define_settings_group!(WarpDrivePrivacySettings, settings: [
     },
     is_cloud_conversation_storage_enabled: IsCloudConversationStorageEnabled {
         type: bool,
-        default: true,
+        default: false,
         supported_platforms: SupportedPlatforms::ALL,
         sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::No),
         private: false,
@@ -196,6 +197,10 @@ impl PrivacySettingsSnapshot {
     }
 
     pub fn should_disable_telemetry(&self) -> bool {
+        if local_patches::is_warp_cloud_agent_removal_enabled() {
+            return true;
+        }
+
         // If a user has opted in to the agent mode analytics experiment, telemetry must be enabled.
         !self.is_telemetry_enabled
             && !self.is_telemetry_force_enabled
@@ -246,11 +251,20 @@ impl PrivacySettings {
         // Initialize from `WarpDrivePrivacySettings`, which is the source of truth for these
         // booleans.
         let warp_drive_privacy = WarpDrivePrivacySettings::as_ref(ctx);
-        let is_telemetry_enabled = *warp_drive_privacy.is_telemetry_enabled.value();
-        let is_crash_reporting_enabled = *warp_drive_privacy.is_crash_reporting_enabled.value();
-        let is_cloud_conversation_storage_enabled = *warp_drive_privacy
-            .is_cloud_conversation_storage_enabled
-            .value();
+        let is_telemetry_enabled = local_patches::coerce_official_warp_privacy_setting(
+            *warp_drive_privacy.is_telemetry_enabled.value(),
+        );
+        let is_crash_reporting_enabled = local_patches::coerce_official_warp_privacy_setting(
+            *warp_drive_privacy.is_crash_reporting_enabled.value(),
+        );
+        let is_cloud_conversation_storage_enabled =
+            local_patches::coerce_official_warp_privacy_setting(
+                *warp_drive_privacy
+                    .is_cloud_conversation_storage_enabled
+                    .value(),
+            );
+
+        Self::enforce_official_warp_privacy_settings_disabled(ctx);
 
         // Listen for changes to the cloud model and update ourselves when they happen.
         ctx.subscribe_to_model(
@@ -260,13 +274,17 @@ impl PrivacySettings {
                 match event {
                     WarpDrivePrivacySettingsChangedEvent::IsTelemetryEnabled { .. } => {
                         me.set_is_telemetry_enabled(
-                            *privacy_settings.is_telemetry_enabled.value(),
+                            local_patches::coerce_official_warp_privacy_setting(
+                                *privacy_settings.is_telemetry_enabled.value(),
+                            ),
                             ctx,
                         );
                     }
                     WarpDrivePrivacySettingsChangedEvent::IsCrashReportingEnabled { .. } => {
                         me.set_is_crash_reporting_enabled(
-                            *privacy_settings.is_crash_reporting_enabled.value(),
+                            local_patches::coerce_official_warp_privacy_setting(
+                                *privacy_settings.is_crash_reporting_enabled.value(),
+                            ),
                             ctx,
                         );
                     }
@@ -274,9 +292,11 @@ impl PrivacySettings {
                         ..
                     } => {
                         me.set_is_cloud_conversation_storage_enabled(
-                            *privacy_settings
-                                .is_cloud_conversation_storage_enabled
-                                .value(),
+                            local_patches::coerce_official_warp_privacy_setting(
+                                *privacy_settings
+                                    .is_cloud_conversation_storage_enabled
+                                    .value(),
+                            ),
                             ctx,
                         );
                     }
@@ -309,6 +329,26 @@ impl PrivacySettings {
 
     pub fn set_is_telemetry_force_enabled(&mut self, is_telemetry_force_enabled: bool) {
         self.is_telemetry_force_enabled = is_telemetry_force_enabled;
+    }
+
+    fn enforce_official_warp_privacy_settings_disabled(ctx: &mut ModelContext<Self>) {
+        if !local_patches::is_warp_cloud_agent_removal_enabled() {
+            return;
+        }
+
+        WarpDrivePrivacySettings::handle(ctx).update(ctx, |settings, ctx| {
+            if *settings.is_telemetry_enabled.value() {
+                report_if_error!(settings.is_telemetry_enabled.set_value(false, ctx));
+            }
+            if *settings.is_crash_reporting_enabled.value() {
+                report_if_error!(settings.is_crash_reporting_enabled.set_value(false, ctx));
+            }
+            if *settings.is_cloud_conversation_storage_enabled.value() {
+                report_if_error!(settings
+                    .is_cloud_conversation_storage_enabled
+                    .set_value(false, ctx));
+            }
+        });
     }
 
     pub fn is_enterprise_secret_redaction_enabled(&self) -> bool {
@@ -362,9 +402,10 @@ impl PrivacySettings {
 
     pub fn refresh_to_default(&mut self) {
         // TODO(zach): this seems incorrect - should we also update the values on disk?
-        self.is_telemetry_enabled = true;
-        self.is_crash_reporting_enabled = true;
-        self.is_cloud_conversation_storage_enabled = true;
+        self.is_telemetry_enabled = local_patches::coerce_official_warp_privacy_setting(true);
+        self.is_crash_reporting_enabled = local_patches::coerce_official_warp_privacy_setting(true);
+        self.is_cloud_conversation_storage_enabled =
+            local_patches::coerce_official_warp_privacy_setting(true);
         self.is_telemetry_force_enabled = false;
         self.is_enterprise_secret_redaction_enabled = false;
     }
@@ -470,15 +511,24 @@ impl PrivacySettings {
     /// The returned snapshot is not stateful, thus its values should be used shortly after the
     /// snapshot is returned.
     pub fn get_snapshot(&self, app: &AppContext) -> PrivacySettingsSnapshot {
+        let is_cloud_conversation_storage_enabled =
+            local_patches::coerce_official_warp_privacy_setting(
+                self.is_cloud_conversation_storage_enabled,
+            );
+
         PrivacySettingsSnapshot {
-            cloud_conversation_storage_enabled: (!self.is_cloud_conversation_storage_enabled)
+            cloud_conversation_storage_enabled: (!is_cloud_conversation_storage_enabled)
                 .then_some(false),
-            is_telemetry_enabled: self.is_telemetry_enabled,
-            is_crash_reporting_enabled: self.is_crash_reporting_enabled,
+            is_telemetry_enabled: local_patches::coerce_official_warp_privacy_setting(
+                self.is_telemetry_enabled,
+            ),
+            is_crash_reporting_enabled: local_patches::coerce_official_warp_privacy_setting(
+                self.is_crash_reporting_enabled,
+            ),
             is_telemetry_force_enabled: self.is_telemetry_force_enabled,
             should_collect_ai_ugc_telemetry: should_collect_ai_ugc_telemetry(
                 app,
-                self.is_telemetry_enabled,
+                local_patches::coerce_official_warp_privacy_setting(self.is_telemetry_enabled),
             ),
         }
     }
@@ -493,30 +543,34 @@ impl PrivacySettings {
         new_value: bool,
         ctx: &mut ModelContext<PrivacySettings>,
     ) {
+        let new_value = local_patches::coerce_official_warp_privacy_setting(new_value);
         let old_value = self.is_crash_reporting_enabled;
-        if new_value != old_value {
-            self.is_crash_reporting_enabled = new_value;
-
-            WarpDrivePrivacySettings::handle(ctx).update(ctx, |settings, ctx| {
-                log::info!("Setting is_crash_reporting_enabled to {new_value}");
-                let _ = settings
-                    .is_crash_reporting_enabled
-                    .set_value(new_value, ctx);
-            });
-
-            if self.auth_state.is_logged_in() {
-                let auth_client = self.auth_client.clone();
-                let _ = ctx.spawn(
-                    async move { auth_client.set_is_crash_reporting_enabled(new_value).await },
-                    |_, _, _| (),
-                );
-            }
-            ctx.emit(PrivacySettingsChangedEvent::UpdateIsCrashReportingEnabled {
-                old_value,
-                new_value,
-            });
-            ctx.notify();
+        if new_value == old_value {
+            Self::enforce_official_warp_privacy_settings_disabled(ctx);
+            return;
         }
+
+        self.is_crash_reporting_enabled = new_value;
+
+        WarpDrivePrivacySettings::handle(ctx).update(ctx, |settings, ctx| {
+            log::info!("Setting is_crash_reporting_enabled to {new_value}");
+            let _ = settings
+                .is_crash_reporting_enabled
+                .set_value(new_value, ctx);
+        });
+
+        if self.auth_state.is_logged_in() {
+            let auth_client = self.auth_client.clone();
+            let _ = ctx.spawn(
+                async move { auth_client.set_is_crash_reporting_enabled(new_value).await },
+                |_, _, _| (),
+            );
+        }
+        ctx.emit(PrivacySettingsChangedEvent::UpdateIsCrashReportingEnabled {
+            old_value,
+            new_value,
+        });
+        ctx.notify();
     }
 
     /// Sets `is_telemetry_enabled` to the given value.
@@ -529,28 +583,32 @@ impl PrivacySettings {
         new_value: bool,
         ctx: &mut ModelContext<PrivacySettings>,
     ) {
+        let new_value = local_patches::coerce_official_warp_privacy_setting(new_value);
         let old_value = self.is_telemetry_enabled;
-        if new_value != old_value {
-            self.is_telemetry_enabled = new_value;
-
-            WarpDrivePrivacySettings::handle(ctx).update(ctx, |settings, ctx| {
-                log::info!("Setting is_telemetry_enabled to {new_value}");
-                let _ = settings.is_telemetry_enabled.set_value(new_value, ctx);
-            });
-
-            if self.auth_state.is_logged_in() {
-                let auth_client = self.auth_client.clone();
-                let _ = ctx.spawn(
-                    async move { auth_client.set_is_telemetry_enabled(new_value).await },
-                    |_, _, _| (),
-                );
-            }
-            ctx.emit(PrivacySettingsChangedEvent::UpdateIsTelemetryEnabled {
-                old_value,
-                new_value,
-            });
-            ctx.notify();
+        if new_value == old_value {
+            Self::enforce_official_warp_privacy_settings_disabled(ctx);
+            return;
         }
+
+        self.is_telemetry_enabled = new_value;
+
+        WarpDrivePrivacySettings::handle(ctx).update(ctx, |settings, ctx| {
+            log::info!("Setting is_telemetry_enabled to {new_value}");
+            let _ = settings.is_telemetry_enabled.set_value(new_value, ctx);
+        });
+
+        if self.auth_state.is_logged_in() {
+            let auth_client = self.auth_client.clone();
+            let _ = ctx.spawn(
+                async move { auth_client.set_is_telemetry_enabled(new_value).await },
+                |_, _, _| (),
+            );
+        }
+        ctx.emit(PrivacySettingsChangedEvent::UpdateIsTelemetryEnabled {
+            old_value,
+            new_value,
+        });
+        ctx.notify();
     }
 
     pub fn set_is_cloud_conversation_storage_enabled(
@@ -558,8 +616,10 @@ impl PrivacySettings {
         new_value: bool,
         ctx: &mut ModelContext<PrivacySettings>,
     ) {
+        let new_value = local_patches::coerce_official_warp_privacy_setting(new_value);
         let old_value = self.is_cloud_conversation_storage_enabled;
         if new_value == old_value {
+            Self::enforce_official_warp_privacy_settings_disabled(ctx);
             return;
         }
 
