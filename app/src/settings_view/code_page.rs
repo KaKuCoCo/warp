@@ -24,9 +24,9 @@ use warp_util::remote_path::RemotePath;
 use warpui::elements::{
     ChildView, ConstrainedBox, Container, CornerRadius, CrossAxisAlignment, Element, Empty,
     Expanded, Fill, Flex, MainAxisAlignment, MainAxisSize, MouseStateHandle, ParentElement, Radius,
-    Shrinkable,
+    Shrinkable, Text,
 };
-use warpui::fonts::Weight;
+use warpui::fonts::{Properties, Weight};
 use warpui::keymap::ContextPredicate;
 use warpui::platform::{Cursor, FilePickerConfiguration};
 use warpui::ui_components::button::ButtonVariant;
@@ -77,18 +77,18 @@ const SUB_SECTION_MARGIN: f32 = 8.;
 
 const STATUS_ICON_SIZE: f32 = 16.;
 const LSP_STATUS_INDICATOR_SIZE: f32 = 8.;
-const CODE_FEATURE_NAME: &str = "Code";
-const INITIALIZATION_SETTINGS_HEADER: &str = "Initialization Settings";
-const CODEBASE_INDEXING_LABEL: &str = "Codebase indexing";
-const CODEBASE_INDEX_DESCRIPTION: &str = "Warp can automatically index code repositories as you navigate them, helping agents quickly understand context and provide solutions. Code is never stored on the server. If a codebase is unable to be indexed, Warp can still navigate your codebase and gain insights via grep and find tool calling.";
-const WARP_INDEXING_IGNORE_DESCRIPTION: &str = "To exclude specific files or directories from indexing, add them to the .warpindexingignore file in your repository directory. These files will still be accessible to AI features, but they won't be included in codebase embeddings.";
-const AUTO_INDEX_FEATURE_NAME: &str = "Index new folders by default";
-const AUTO_INDEX_DESCRIPTION: &str = "When set to true, Warp will automatically index code repositories as you navigate them - helping agents quickly understand context and provide targeted solutions.";
-const INDEXING_DISABLED_ADMIN_TEXT: &str = "Team admins have disabled codebase indexing.";
-const INDEXING_WORKSPACE_ENABLED_ADMIN_TEXT: &str = "Team admins have enabled codebase indexing.";
-const INDEXING_DISABLED_GLOBAL_AI_TEXT: &str =
-    "AI Features must be enabled to use codebase indexing.";
-const CODEBASE_INDEX_LIMIT_REACHED: &str = "You have reached the maximum number of codebase indices for your plan. Delete existing indices to auto-index new codebases.";
+const CODE_FEATURE_NAME: &str = "程式碼";
+const INITIALIZATION_SETTINGS_HEADER: &str = "初始化設定";
+const CODEBASE_INDEXING_LABEL: &str = "程式碼庫索引";
+const CODEBASE_INDEX_DESCRIPTION: &str = "Warp 可在你瀏覽程式碼 repository 時自動建立索引，協助 Agent 快速理解脈絡並提供解法。程式碼絕不會儲存在伺服器上。若某個程式碼庫無法建立索引，Warp 仍可瀏覽你的程式碼庫，並透過 grep 與 find 工具呼叫取得洞察。";
+const WARP_INDEXING_IGNORE_DESCRIPTION: &str = "若要將特定檔案或目錄排除在索引之外，請將其加入 repository 目錄中的 .warpindexingignore 檔案。這些檔案仍可供 AI 功能存取，但不會納入程式碼庫 embeddings。";
+const AUTO_INDEX_FEATURE_NAME: &str = "預設為新資料夾建立索引";
+const AUTO_INDEX_DESCRIPTION: &str = "啟用後，Warp 會在你瀏覽程式碼 repository 時自動建立索引，協助 Agent 快速理解脈絡並提供精準解法。";
+const INDEXING_DISABLED_ADMIN_TEXT: &str = "團隊管理員已停用程式碼庫索引。";
+const INDEXING_WORKSPACE_ENABLED_ADMIN_TEXT: &str = "團隊管理員已啟用程式碼庫索引。";
+const INDEXING_DISABLED_GLOBAL_AI_TEXT: &str = "必須啟用 AI 功能才能使用程式碼庫索引。";
+const CODEBASE_INDEX_LIMIT_REACHED: &str =
+    "你的方案已達程式碼庫索引數量上限。請刪除現有索引，以便自動為新的程式碼庫建立索引。";
 #[cfg(not(target_family = "wasm"))]
 const REMOTE_CODEBASE_INDEX_LIMIT_REACHED_FAILURE: &str =
     "maximum number of codebase indexes has been reached";
@@ -329,7 +329,7 @@ impl CodeSettingsPageView {
         });
 
         let manual_add_directory_button = ctx.add_typed_action_view(|_| {
-            ActionButton::new("Index new folder", SecondaryTheme)
+            ActionButton::new("為新資料夾建立索引", SecondaryTheme)
                 .with_icon(Icon::FindAll)
                 .on_click(|ctx| {
                     ctx.dispatch_typed_action(CodeSettingsPageAction::ManualAddDirectory);
@@ -426,7 +426,7 @@ impl CodeSettingsPageView {
             // or the full categorized page when subpage is None.
             if let Some(subpage) = subpage {
                 let manual_add_directory_button = ctx.add_typed_action_view(|_| {
-                    ActionButton::new("Index new folder", SecondaryTheme)
+                    ActionButton::new("為新資料夾建立索引", SecondaryTheme)
                         .with_icon(Icon::FindAll)
                         .on_click(|ctx| {
                             ctx.dispatch_typed_action(CodeSettingsPageAction::ManualAddDirectory);
@@ -477,7 +477,7 @@ impl CodeSettingsPageView {
     fn build_full_page(ctx: &mut ViewContext<Self>) -> PageType<Self> {
         if FeatureFlag::OpenWarpNewSettingsModes.is_enabled() {
             let manual_add_directory_button = ctx.add_typed_action_view(|_| {
-                ActionButton::new("Index new folder", SecondaryTheme)
+                ActionButton::new("為新資料夾建立索引", SecondaryTheme)
                     .with_icon(Icon::FindAll)
                     .on_click(|ctx| {
                         ctx.dispatch_typed_action(CodeSettingsPageAction::ManualAddDirectory);
@@ -517,7 +517,7 @@ impl CodeSettingsPageView {
             PageType::new_categorized(categories, None)
         } else {
             let manual_add_directory_button = ctx.add_typed_action_view(|_| {
-                ActionButton::new("Index new folder", SecondaryTheme)
+                ActionButton::new("為新資料夾建立索引", SecondaryTheme)
                     .with_icon(Icon::FindAll)
                     .on_click(|ctx| {
                         ctx.dispatch_typed_action(CodeSettingsPageAction::ManualAddDirectory);
@@ -1319,7 +1319,6 @@ impl CodePageWidget {
         appearance: &Appearance,
         app: &AppContext,
     ) -> Box<dyn Element> {
-        let ui_builder = appearance.ui_builder();
         let theme = appearance.theme();
 
         let InitializedFoldersMouseStates {
@@ -1343,16 +1342,14 @@ impl CodePageWidget {
                     .with_main_axis_alignment(MainAxisAlignment::SpaceBetween)
                     .with_cross_axis_alignment(CrossAxisAlignment::Center)
                     .with_child(
-                        ui_builder
-                            .span("Initialized / indexed folders")
-                            .with_style(UiComponentStyles {
-                                font_size: Some(16.0),
-                                font_weight: Some(Weight::Semibold),
-                                font_color: Some(theme.active_ui_text_color().into()),
-                                ..Default::default()
-                            })
-                            .build()
-                            .finish(),
+                        Text::new_inline(
+                            "已初始化 / 已建立索引的資料夾",
+                            appearance.ui_font_family(),
+                            16.0,
+                        )
+                        .with_style(Properties::default().weight(Weight::Semibold))
+                        .with_color(theme.active_ui_text_color().into())
+                        .finish(),
                     )
                     .with_child(ChildView::new(&self.manual_add_directory_button).finish())
                     .finish(),
@@ -1468,7 +1465,7 @@ impl CodePageWidget {
                 Container::new(
                     appearance
                         .ui_builder()
-                        .paragraph("No folders have been initialized yet.")
+                        .paragraph("尚未初始化任何資料夾。")
                         .build()
                         .finish(),
                 )
@@ -1699,7 +1696,7 @@ impl CodePageWidget {
         let mut column = Flex::column().with_spacing(SUB_SECTION_MARGIN);
         column.add_child(
             ui_builder
-                .span("INDEXING")
+                .span("索引")
                 .with_style(UiComponentStyles {
                     font_size: Some(11.0),
                     font_weight: Some(Weight::Semibold),
@@ -1738,7 +1735,7 @@ impl CodePageWidget {
         let theme = appearance.theme();
         let Some(index_state) = index_state else {
             return IndexingStatusPresentation {
-                text: Cow::from("No index created"),
+                text: Cow::from("尚未建立索引"),
                 color: theme.disabled_ui_text_color().into_solid(),
                 icon: Some(Icon::SlashCircle),
                 refresh_action: None,
@@ -1749,13 +1746,13 @@ impl CodePageWidget {
         if index_state.has_pending() {
             let text = match index_state.sync_progress() {
                 Some(SyncProgress::Discovering { total_nodes }) => {
-                    Cow::from(format!("Discovered {total_nodes} chunks"))
+                    Cow::from(format!("已探索 {total_nodes} 個區塊"))
                 }
                 Some(SyncProgress::Syncing {
                     completed_nodes,
                     total_nodes,
-                }) => Cow::from(format!("Syncing - {completed_nodes} / {total_nodes}")),
-                None => Cow::from("Syncing..."),
+                }) => Cow::from(format!("同步中 - {completed_nodes} / {total_nodes}")),
+                None => Cow::from("同步中..."),
             };
 
             return IndexingStatusPresentation {
@@ -1769,25 +1766,25 @@ impl CodePageWidget {
 
         if let Some(completed_successfully) = index_state.last_sync_successful() {
             let (text, color, icon) = if completed_successfully {
-                ("Synced", theme.ansi_fg_green(), Icon::Check)
+                ("已同步", theme.ansi_fg_green(), Icon::Check)
             } else if let Some(CodebaseIndexFinishedStatus::Failed(
                 CodebaseIndexingError::ExceededMaxFileLimit
                 | CodebaseIndexingError::MaxDepthExceeded,
             )) = index_state.last_sync_result()
             {
                 (
-                    "Codebase too large",
+                    "程式碼庫太大",
                     theme.ui_warning_color(),
                     Icon::AlertTriangle,
                 )
             } else if index_state.has_synced_version() {
                 (
-                    "Stale",
+                    "已過期",
                     theme.nonactive_ui_detail().into_solid(),
                     Icon::ClockRefresh,
                 )
             } else {
-                ("Failed", theme.ui_error_color(), Icon::AlertTriangle)
+                ("失敗", theme.ui_error_color(), Icon::AlertTriangle)
             };
 
             return IndexingStatusPresentation {
@@ -1801,7 +1798,7 @@ impl CodePageWidget {
 
         log::warn!("No index state for codebase");
         IndexingStatusPresentation {
-            text: Cow::from("No index built"),
+            text: Cow::from("尚未建置索引"),
             color: theme.nonactive_ui_text_color().into_solid(),
             icon: None,
             refresh_action: None,
@@ -1819,7 +1816,7 @@ impl CodePageWidget {
 
         match status.state {
             RemoteCodebaseIndexState::NotEnabled => IndexingStatusPresentation {
-                text: Cow::from("No index created"),
+                text: Cow::from("尚未建立索引"),
                 color: theme.disabled_ui_text_color().into_solid(),
                 icon: Some(Icon::SlashCircle),
                 refresh_action: Some(IndexingRefreshAction::RequestRemote),
@@ -1829,9 +1826,9 @@ impl CodePageWidget {
                 let limit_reached = remote_codebase_index_limit_reached(status);
                 IndexingStatusPresentation {
                     text: Cow::from(if limit_reached {
-                        "Index limit reached"
+                        "已達索引上限"
                     } else {
-                        "Unavailable"
+                        "無法使用"
                     }),
                     color: if limit_reached {
                         theme.ui_warning_color()
@@ -1848,14 +1845,14 @@ impl CodePageWidget {
                 }
             }
             RemoteCodebaseIndexState::Disabled => IndexingStatusPresentation {
-                text: Cow::from("Disabled"),
+                text: Cow::from("已停用"),
                 color: theme.disabled_ui_text_color().into_solid(),
                 icon: Some(Icon::SlashCircle),
                 refresh_action: Some(IndexingRefreshAction::RequestRemote),
                 show_delete: true,
             },
             RemoteCodebaseIndexState::Queued => IndexingStatusPresentation {
-                text: Cow::from("Queued"),
+                text: Cow::from("已排入佇列"),
                 color: theme.disabled_ui_text_color().into_solid(),
                 icon: None,
                 refresh_action: None,
@@ -1864,11 +1861,11 @@ impl CodePageWidget {
             RemoteCodebaseIndexState::Indexing => {
                 let text = match (status.progress_completed, status.progress_total) {
                     (Some(completed), Some(total)) => {
-                        Cow::from(format!("Indexing - {completed} / {total}"))
+                        Cow::from(format!("建立索引中 - {completed} / {total}"))
                     }
-                    (Some(completed), None) => Cow::from(format!("Indexing - {completed}")),
-                    (None, Some(total)) => Cow::from(format!("Indexing - 0 / {total}")),
-                    (None, None) => Cow::from("Indexing..."),
+                    (Some(completed), None) => Cow::from(format!("建立索引中 - {completed}")),
+                    (None, Some(total)) => Cow::from(format!("建立索引中 - 0 / {total}")),
+                    (None, None) => Cow::from("建立索引中..."),
                 };
 
                 IndexingStatusPresentation {
@@ -1880,21 +1877,21 @@ impl CodePageWidget {
                 }
             }
             RemoteCodebaseIndexState::Ready => IndexingStatusPresentation {
-                text: Cow::from("Synced"),
+                text: Cow::from("已同步"),
                 color: theme.ansi_fg_green(),
                 icon: Some(Icon::Check),
                 refresh_action: Some(IndexingRefreshAction::Resync),
                 show_delete: true,
             },
             RemoteCodebaseIndexState::Stale => IndexingStatusPresentation {
-                text: Cow::from("Stale"),
+                text: Cow::from("已過期"),
                 color: theme.nonactive_ui_detail().into_solid(),
                 icon: Some(Icon::ClockRefresh),
                 refresh_action: Some(IndexingRefreshAction::Resync),
                 show_delete: true,
             },
             RemoteCodebaseIndexState::Failed => IndexingStatusPresentation {
-                text: Cow::from("Failed"),
+                text: Cow::from("失敗"),
                 color: theme.ui_error_color(),
                 icon: Some(Icon::AlertTriangle),
                 refresh_action: Some(IndexingRefreshAction::Resync),
@@ -2049,7 +2046,7 @@ impl CodePageWidget {
         // "LSP SERVERS" label
         content.add_child(
             ui_builder
-                .span("LSP SERVERS")
+                .span("LSP 伺服器")
                 .with_style(UiComponentStyles {
                     font_size: Some(11.0),
                     font_weight: Some(Weight::Semibold),
@@ -2162,10 +2159,10 @@ impl CodePageWidget {
         );
 
         let (description, is_installing) = match &repo_status {
-            Some(LspRepoStatus::DisabledAndInstalled { .. }) => ("Installed", false),
-            Some(LspRepoStatus::Installing { .. }) => ("Installing...", true),
-            Some(LspRepoStatus::CheckingForInstallation) => ("Checking...", true),
-            _ => ("Available for download", false),
+            Some(LspRepoStatus::DisabledAndInstalled { .. }) => ("已安裝", false),
+            Some(LspRepoStatus::Installing { .. }) => ("安裝中...", true),
+            Some(LspRepoStatus::CheckingForInstallation) => ("檢查中...", true),
+            _ => ("可下載", false),
         };
 
         name_desc_column.add_child(
@@ -2347,7 +2344,7 @@ impl CodePageWidget {
                         background: Some(theme.surface_3().into()),
                         ..Default::default()
                     })
-                    .with_text_label("Restart server".to_owned())
+                    .with_text_label("重新啟動伺服器".to_owned())
                     .build()
                     .with_cursor(Cursor::PointingHand)
                     .on_click(move |ctx, _, _| {
@@ -2378,7 +2375,7 @@ impl CodePageWidget {
                         font_size: Some(12.),
                         ..Default::default()
                     })
-                    .with_text_label("View logs".to_owned())
+                    .with_text_label("查看記錄".to_owned())
                     .build()
                     .with_cursor(Cursor::PointingHand)
                     .on_click(move |ctx, _, _| {
@@ -2434,26 +2431,26 @@ impl CodePageWidget {
                         AnsiColorIdentifier::Green
                             .to_ansi_color(&theme.terminal_colors().normal)
                             .into(),
-                        "Available",
+                        "可用",
                     ),
                     LspState::Starting | LspState::Available { .. } => (
                         AnsiColorIdentifier::Yellow
                             .to_ansi_color(&theme.terminal_colors().normal)
                             .into(),
-                        "Busy",
+                        "忙碌中",
                     ),
                     LspState::Failed { .. } => (
                         AnsiColorIdentifier::Red
                             .to_ansi_color(&theme.terminal_colors().normal)
                             .into(),
-                        "Failed",
+                        "失敗",
                     ),
                     LspState::Stopped { .. } | LspState::Stopping { .. } => {
-                        (theme.disabled_ui_text_color().into_solid(), "Stopped")
+                        (theme.disabled_ui_text_color().into_solid(), "已停止")
                     }
                 }
             }
-            None => (theme.disabled_ui_text_color().into_solid(), "Not running"),
+            None => (theme.disabled_ui_text_color().into_solid(), "未執行"),
         }
     }
 }

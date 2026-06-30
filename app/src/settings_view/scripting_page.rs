@@ -121,7 +121,7 @@ impl ScriptingSettingsPageView {
                     Ok(()) => {
                         let command_name = ChannelState::channel().warpctrl_command_name();
                         let message = format!(
-                            "Successfully installed the Warp Control CLI! You can now run '{command_name}' from the command line."
+                            "已成功安裝 Warp Control CLI！你現在可以從命令列執行「{command_name}」。"
                         );
                         ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
                             toast_stack.add_ephemeral_toast(
@@ -132,7 +132,7 @@ impl ScriptingSettingsPageView {
                         });
                     }
                     Err(error) => {
-                        let message = format!("Failed to install Warp Control command: {error}");
+                        let message = format!("安裝 Warp Control 命令失敗：{error}");
                         log::warn!("{message}");
                         ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
                             toast_stack.add_persistent_toast(
@@ -231,11 +231,11 @@ impl SettingsWidget for WarpControlCliInstallWidget {
         let installed = cli_install::is_warpctrl_installed();
         let disabled = view.warpctrl_installing || installed;
         let label = if view.warpctrl_installing {
-            "Installing…"
+            "安裝中…"
         } else if installed {
-            "Installed"
+            "已安裝"
         } else {
-            "Install"
+            "安裝"
         };
         let mut button = appearance
             .ui_builder()

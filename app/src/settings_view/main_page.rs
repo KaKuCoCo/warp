@@ -48,10 +48,10 @@ use crate::workspaces::workspace::CustomerType;
 use crate::{report_if_error, send_telemetry_from_ctx, TelemetryEvent};
 
 const PHOTO_SIZE: f32 = 40.;
-const REFERRAL_CTA: &str = "Earn rewards by sharing Warp with friends & colleagues";
+const REFERRAL_CTA: &str = "與朋友和同事分享 Warp 來賺取獎勵";
 const REGULAR_TEXT_FONT_SIZE: f32 = 12.;
 const VERTICAL_MARGIN: f32 = 24.;
-const LOG_OUT_TEXT: &str = "Log out";
+const LOG_OUT_TEXT: &str = "登出";
 lazy_static! {
     static ref SETTINGS_SYNC_BINDINGS_ADDED: Arc<Mutex<bool>> = Default::default();
 }
@@ -142,10 +142,10 @@ impl From<&MainPageAction> for LoginGatedFeature {
     fn from(val: &MainPageAction) -> LoginGatedFeature {
         use MainPageAction::*;
         match val {
-            Upgrade { .. } => "Upgrade Plan",
-            GenerateStripeBillingPortalLink { .. } => "Generate Stripe Billing Portal Link",
-            ToggleSettingsSync => "Toggle Settings Sync",
-            _ => "Unknown reason",
+            Upgrade { .. } => "升級方案",
+            GenerateStripeBillingPortalLink { .. } => "產生 Stripe 帳單入口連結",
+            ToggleSettingsSync => "切換設定同步",
+            _ => "未知原因",
         }
     }
 }
@@ -350,7 +350,7 @@ impl AccountWidget {
                 self.ui_state_handles.anonymous_user_sign_up_button.clone(),
             )
             .with_style(button_styles)
-            .with_text_label("Sign up".to_owned())
+            .with_text_label("註冊".to_owned())
             .build()
             .on_click(move |ctx, _, _| {
                 ctx.dispatch_typed_action(MainPageAction::SignupAnonymousUser);
@@ -374,7 +374,7 @@ impl AccountWidget {
                     .with_text_and_icon_label(
                         TextAndIcon::new(
                             TextAndIconAlignment::IconFirst,
-                            "Compare plans",
+                            "比較方案",
                             Icon::CoinsStacked.to_warpui_icon(appearance.theme().accent()),
                             MainAxisSize::Min,
                             MainAxisAlignment::Center,
@@ -510,7 +510,7 @@ impl AccountWidget {
                         appearance
                             .ui_builder()
                             .link(
-                                "Contact support".into(),
+                                "聯絡支援".into(),
                                 Some("mailto:support@warp.dev".into()),
                                 None,
                                 self.ui_state_handles.enterprise_contact_us_link.clone(),
@@ -527,7 +527,7 @@ impl AccountWidget {
                             appearance
                                 .ui_builder()
                                 .link(
-                                    "Manage billing".into(),
+                                    "管理帳單".into(),
                                     None,
                                     Some(Box::new(move |ctx| {
                                         ctx.dispatch_typed_action(
@@ -548,9 +548,9 @@ impl AccountWidget {
                     // If the team is upgradeable to self-serve tier, show them the upgrade link.
                     if team.billing_metadata.can_upgrade_to_higher_tier_plan() {
                         let description = match team.billing_metadata.customer_type {
-                            CustomerType::Prosumer => "Upgrade to Turbo plan",
-                            CustomerType::Turbo => "Upgrade to Lightspeed plan",
-                            _ => "Compare plans",
+                            CustomerType::Prosumer => "升級至 Turbo 方案",
+                            CustomerType::Turbo => "升級至 Lightspeed 方案",
+                            _ => "比較方案",
                         };
                         let team_uid = team.uid;
                         plan_info.add_child(
@@ -583,7 +583,7 @@ impl AccountWidget {
                 appearance
                     .ui_builder()
                     .link(
-                        "Compare plans".into(),
+                        "比較方案".into(),
                         None,
                         Some(Box::new(move |ctx| {
                             ctx.dispatch_typed_action(MainPageAction::Upgrade {
@@ -797,7 +797,7 @@ impl SettingsWidget for EarnRewardsWidget {
                 appearance
                     .ui_builder()
                     .link(
-                        "Refer a friend".into(),
+                        "推薦朋友".into(),
                         None,
                         Some(Box::new(move |ctx| {
                             ctx.dispatch_typed_action(WorkspaceAction::ShowReferralSettingsPage);
@@ -847,73 +847,73 @@ impl VersionInfoWidget {
                 match autoupdate::get_update_state(app) {
                     AutoupdateStage::NoUpdateAvailable => (
                         Some(StatusContent {
-                            text: "Up to date",
+                            text: "已是最新版本",
                             color: faded_text_color,
                         }),
                         Some(CallToActionContent {
-                            text: "Check for updates",
+                            text: "檢查更新",
                             action: MainPageAction::CheckForUpdate,
                         }),
                     ),
                     AutoupdateStage::CheckingForUpdate => (
                         Some(StatusContent {
-                            text: "checking for update...",
+                            text: "正在檢查更新...",
                             color: faded_text_color,
                         }),
                         None,
                     ),
                     AutoupdateStage::DownloadingUpdate => (
                         Some(StatusContent {
-                            text: "downloading update...",
+                            text: "正在下載更新...",
                             color: faded_text_color,
                         }),
                         None,
                     ),
                     AutoupdateStage::UpdateReady { .. } => (
                         Some(StatusContent {
-                            text: "Update available",
+                            text: "有可用更新",
                             color: ansi_red,
                         }),
                         Some(CallToActionContent {
-                            text: "Relaunch Warp",
+                            text: "重新啟動 Warp",
                             action: MainPageAction::Relaunch,
                         }),
                     ),
                     AutoupdateStage::Updating { .. } => (
                         Some(StatusContent {
-                            text: "Updating...",
+                            text: "正在更新...",
                             color: faded_text_color,
                         }),
                         None,
                     ),
                     AutoupdateStage::UpdatedPendingRestart { .. } => (
                         Some(StatusContent {
-                            text: "Installed update",
+                            text: "更新已安裝",
                             color: faded_text_color,
                         }),
                         Some(CallToActionContent {
-                            text: "Relaunch Warp",
+                            text: "重新啟動 Warp",
                             action: MainPageAction::Relaunch,
                         }),
                     ),
                     AutoupdateStage::UnableToUpdateToNewVersion { .. } => (
                         Some(StatusContent {
-                            text: "A new version of Warp is available but can't be installed",
+                            text: "有新版 Warp 可用，但無法安裝",
                             color: ansi_red,
                         }),
                         Some(CallToActionContent {
-                            text: "Update Warp manually",
+                            text: "手動更新 Warp",
                             // note: the handler for this action is a no-op
                             action: MainPageAction::DownloadUpdate,
                         }),
                     ),
                     AutoupdateStage::UnableToLaunchNewVersion { .. } => (
                         Some(StatusContent {
-                            text: "A new version of Warp is installed but can't be launched.",
+                            text: "已安裝新版 Warp，但無法啟動。",
                             color: ansi_red,
                         }),
                         Some(CallToActionContent {
-                            text: "Update Warp manually",
+                            text: "手動更新 Warp",
                             // note: the handler for this action is a no-op
                             action: MainPageAction::DownloadUpdate,
                         }),
@@ -930,7 +930,7 @@ impl VersionInfoWidget {
                     1.0,
                     Align::new(
                         Text::new_inline(
-                            "Version".to_string(),
+                            "版本".to_string(),
                             appearance.ui_font_family(),
                             REGULAR_TEXT_FONT_SIZE,
                         )
@@ -1103,18 +1103,18 @@ impl SettingsWidget for IapCredentialsWidget {
         let disabled: ColorU = appearance.theme().disabled_ui_text_color().into();
         let active: ColorU = appearance.theme().active_ui_text_color().into();
         let (status_text, status_color): (String, ColorU) = match &state {
-            IapCredentialsState::Missing => ("Not yet loaded".to_string(), disabled),
-            IapCredentialsState::Refreshing { .. } => ("Refreshing…".to_string(), active),
+            IapCredentialsState::Missing => ("尚未載入".to_string(), disabled),
+            IapCredentialsState::Refreshing { .. } => ("正在重新整理…".to_string(), active),
             IapCredentialsState::Loaded(cached) => {
                 let remaining = cached
                     .expires_at
                     .saturating_duration_since(instant::Instant::now());
                 let mins = remaining.as_secs() / 60;
-                (format!("Loaded (refreshes in ~{mins}m)"), active)
+                (format!("已載入（約 {mins} 分鐘後重新整理）"), active)
             }
-            IapCredentialsState::Failed { message, .. } => (format!("Failed: {message}"), ansi_red),
+            IapCredentialsState::Failed { message, .. } => (format!("失敗：{message}"), ansi_red),
             IapCredentialsState::EnvInjected { .. } => {
-                ("Using injected token (WARP_IAP_TOKEN)".to_string(), active)
+                ("使用注入的 token（WARP_IAP_TOKEN）".to_string(), active)
             }
         };
 
@@ -1122,7 +1122,7 @@ impl SettingsWidget for IapCredentialsWidget {
 
         let label = Align::new(
             Text::new_inline(
-                "Staging IAP credentials".to_string(),
+                "Staging IAP 憑證".to_string(),
                 appearance.ui_font_family(),
                 REGULAR_TEXT_FONT_SIZE,
             )
@@ -1154,9 +1154,9 @@ impl SettingsWidget for IapCredentialsWidget {
                 self.refresh_button_mouse_state.clone(),
             )
             .with_text_label(if is_refreshing {
-                "Refreshing…".into()
+                "正在重新整理…".into()
             } else {
-                "Refresh".into()
+                "重新整理".into()
             })
             .with_style(UiComponentStyles {
                 font_size: Some(12.),

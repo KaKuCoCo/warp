@@ -1052,7 +1052,7 @@ impl FeaturesPageAction {
                 action: "QuakeEditorSetPinScreen".to_string(),
                 value: screen
                     .map(|idx| format!("{idx}"))
-                    .unwrap_or_else(|| "Active Screen".into()),
+                    .unwrap_or_else(|| "目前螢幕".into()),
             },
             Self::QuakeEditorResetWidthHeight => TelemetryEvent::FeaturesPageAction {
                 action: "QuakeEditorResetWidthHeight".to_string(),
@@ -2303,22 +2303,22 @@ impl FeaturesPageView {
             let mut dropdown = Dropdown::new(ctx);
 
             let top = DropdownItem::new(
-                "Pin to top",
+                "固定到上方",
                 FeaturesPageAction::QuakeEditorSetPinPosition(QuakeModePinPosition::Top),
             );
 
             let bottom = DropdownItem::new(
-                "Pin to bottom",
+                "固定到底部",
                 FeaturesPageAction::QuakeEditorSetPinPosition(QuakeModePinPosition::Bottom),
             );
 
             let left = DropdownItem::new(
-                "Pin to left",
+                "固定到左側",
                 FeaturesPageAction::QuakeEditorSetPinPosition(QuakeModePinPosition::Left),
             );
 
             let right = DropdownItem::new(
-                "Pin to right",
+                "固定到右側",
                 FeaturesPageAction::QuakeEditorSetPinPosition(QuakeModePinPosition::Right),
             );
 
@@ -3461,7 +3461,7 @@ impl FeaturesPageView {
         self.graphics_backend_dropdown.update(ctx, |dropdown, ctx| {
             if let Some(window) = ctx.windows().platform_window(ctx.window_id()) {
                 let mut items = vec![DropdownItem::new(
-                    "Default",
+                    "預設",
                     FeaturesPageAction::SetPreferredGraphicsBackend(None),
                 )];
                 items.extend(window.supported_backends().into_iter().map(|backend| {
@@ -3477,7 +3477,7 @@ impl FeaturesPageView {
                 gpu_settings
                     .preferred_backend
                     .map(|backend| backend.to_label())
-                    .unwrap_or("Default"),
+                    .unwrap_or("預設"),
                 ctx,
             );
         });
@@ -3573,8 +3573,8 @@ impl FeaturesPageView {
 
     fn new_tab_placement_dropdown_item_label(val: NewTabPlacement) -> &'static str {
         match val {
-            NewTabPlacement::AfterAllTabs => "After all tabs",
-            NewTabPlacement::AfterCurrentTab => "After current tab",
+            NewTabPlacement::AfterAllTabs => "所有分頁之後",
+            NewTabPlacement::AfterCurrentTab => "目前分頁之後",
         }
     }
 
@@ -3789,7 +3789,7 @@ impl FeaturesPageView {
                         .with_child(
                             Container::new(
                                 Text::new_inline(
-                                    "Width %",
+                                    "寬度 %",
                                     appearance.ui_font_family(),
                                     appearance.ui_font_size(),
                                 )
@@ -3827,7 +3827,7 @@ impl FeaturesPageView {
                         .with_child(
                             Container::new(
                                 Text::new_inline(
-                                    "Height %",
+                                    "高度 %",
                                     appearance.ui_font_family(),
                                     appearance.ui_font_size(),
                                 )
@@ -3905,7 +3905,7 @@ impl FeaturesPageView {
                 .with_child(
                     appearance
                         .ui_builder()
-                        .span("Autohides on loss of keyboard focus")
+                        .span("失去鍵盤焦點時自動隱藏")
                         .build()
                         .with_margin_left(5.)
                         .finish(),
@@ -4001,7 +4001,7 @@ impl FeaturesPageView {
                 Container::new(
                     Align::new(
                         Text::new_inline(
-                            "When a command takes longer than",
+                            "當命令執行時間超過",
                             appearance.ui_font_family(),
                             font_size,
                         )
@@ -4036,13 +4036,9 @@ impl FeaturesPageView {
             .with_child(
                 Container::new(
                     Align::new(
-                        Text::new_inline(
-                            "seconds to complete",
-                            appearance.ui_font_family(),
-                            font_size,
-                        )
-                        .with_color(font_color.into())
-                        .finish(),
+                        Text::new_inline("秒仍未完成時", appearance.ui_font_family(), font_size)
+                            .with_color(font_color.into())
+                            .finish(),
                     )
                     .finish(),
                 )
@@ -4119,7 +4115,7 @@ impl FeaturesPageView {
                     Shrinkable::new(
                         2.,
                         Align::new(
-                            Text::new_inline("Keybinding", appearance.ui_font_family(), 13.)
+                            Text::new_inline("鍵盤快速鍵", appearance.ui_font_family(), 13.)
                                 .with_color(appearance.theme().active_ui_text_color().into())
                                 .finish(),
                         )
@@ -4140,7 +4136,7 @@ impl FeaturesPageView {
                         } else {
                             appearance
                                 .ui_builder()
-                                .paragraph("Click to set global hotkey".to_string())
+                                .paragraph("點擊以設定全域熱鍵".to_string())
                                 .build()
                                 .finish()
                         })
@@ -4195,7 +4191,7 @@ impl FeaturesPageView {
                 padding: Some(Coords::default().right(10.)),
                 ..Default::default()
             })
-            .with_text_label("Cancel".to_string())
+            .with_text_label("取消".to_string())
             .build()
             .on_click(move |ctx, _, _| {
                 ctx.dispatch_typed_action(cancel_action.clone());
@@ -4207,7 +4203,7 @@ impl FeaturesPageView {
             appearance
                 .ui_builder()
                 .button(ButtonVariant::Text, save_button_mouse_state)
-                .with_text_label("Save".to_string())
+                .with_text_label("儲存".to_string())
                 .build()
                 .on_click(move |ctx, _, _| {
                     ctx.dispatch_typed_action(save_action.clone());
@@ -4231,7 +4227,7 @@ impl FeaturesPageView {
                                 2.,
                                 Align::new(
                                     Text::new_inline(
-                                        "Press new keyboard shortcut",
+                                        "按下新的鍵盤快速鍵",
                                         appearance.ui_font_family(),
                                         13.,
                                     )
@@ -4282,7 +4278,7 @@ impl FeaturesPageView {
                 }
 
                 Container::new(
-                    Text::new_inline("Change keybinding", appearance.ui_font_family(), 12.)
+                    Text::new_inline("變更鍵盤快速鍵", appearance.ui_font_family(), 12.)
                         .with_color(button_color)
                         .finish(),
                 )
@@ -4448,7 +4444,7 @@ fn init_display_count_dropdown(
     ctx: &mut ViewContext<Dropdown<FeaturesPageAction>>,
 ) {
     let no_preference = DropdownItem::new(
-        "Active Screen",
+        "目前螢幕",
         //|| {
         FeaturesPageAction::QuakeEditorSetPinScreen(None), //}
     );
@@ -4472,7 +4468,7 @@ fn init_display_count_dropdown(
         Some(idx) if idx.is_valid_given_display_count(display_count) => {
             dropdown.set_selected_by_name(format!("{idx}"), ctx)
         }
-        _ => dropdown.set_selected_by_name("Active Screen", ctx),
+        _ => dropdown.set_selected_by_name("目前螢幕", ctx),
     };
 }
 
@@ -4602,7 +4598,7 @@ impl SettingsWidget for SessionRestorationWidget {
 
             let link = ui_builder
                 .link(
-                    "See docs.".to_owned(),
+                    "查看文件。".to_owned(),
                     Some("https://docs.warp.dev/terminal/sessions/session-restoration".to_owned()),
                     None,
                     self.docs_link.clone(),
@@ -5358,7 +5354,7 @@ impl SettingsWidget for DesktopNotificationsWidget {
                         .finish(),
                     )
                     .with_child(
-                        Text::new_inline("seconds", appearance.ui_font_family(), font_size)
+                        Text::new_inline("秒", appearance.ui_font_family(), font_size)
                             .with_color(font_color.into())
                             .finish(),
                     )
@@ -5617,13 +5613,10 @@ impl SettingsWidget for GlobalHotkeyWidget {
                 appearance,
                 Flex::row()
                     .with_children([
-                        ui_builder
-                            .span("Not supported on Wayland. ")
-                            .build()
-                            .finish(),
+                        ui_builder.span("Wayland 不支援。").build().finish(),
                         ui_builder
                             .link(
-                                "See docs.".to_owned(),
+                                "查看文件。".to_owned(),
                                 Some(
                                     "https://docs.warp.dev/terminal/windows/global-hotkey"
                                         .to_owned(),
@@ -6596,36 +6589,35 @@ impl TabKeyBehaviorWidget {
             TabBehavior::Completions if view.autosuggestions_keystroke.is_empty() => {
                 // If the "Accept autosuggestions" keybinding is unbound, the
                 // user can always still accept with right arrow.
-                Some("→ accepts autosuggestions.".into())
+                Some("→ 接受自動建議。".into())
             }
             TabBehavior::Completions => Some(format!(
-                "{} accepts autosuggestions.",
+                "{} 接受自動建議。",
                 *view.autosuggestions_keystroke
             )),
             TabBehavior::Autosuggestions
                 if *input_settings.completions_open_while_typing.value() =>
             {
                 if view.completions_keystroke.is_empty() {
-                    Some("Completions open as you type.".into())
+                    Some("輸入時開啟補全。".into())
                 } else {
                     Some(format!(
-                        "Completions open as you type (or {}).",
+                        "輸入時開啟補全（或按 {}）。",
                         *view.completions_keystroke
                     ))
                 }
             }
             TabBehavior::Autosuggestions if view.completions_keystroke.is_empty() => {
-                Some("Opening the completion menu is unbound.".into())
+                Some("開啟補全選單尚未綁定快速鍵。".into())
             }
-            TabBehavior::Autosuggestions => Some(format!(
-                "{} opens completion menu.",
-                *view.completions_keystroke
-            )),
+            TabBehavior::Autosuggestions => {
+                Some(format!("{} 開啟補全選單。", *view.completions_keystroke))
+            }
             TabBehavior::UserDefined => None,
         };
         let other_keybinding_name = match *view.tab_behavior {
-            TabBehavior::Completions => Some("Accept Autosuggestion"),
-            TabBehavior::Autosuggestions => Some("Open Completions Menu"),
+            TabBehavior::Completions => Some("接受自動建議"),
+            TabBehavior::Autosuggestions => Some("開啟補全選單"),
             TabBehavior::UserDefined => None,
         };
 
@@ -6678,7 +6670,7 @@ impl SettingsWidget for TabKeyBehaviorWidget {
             .with_child(
                 appearance
                     .ui_builder()
-                    .span("Tab key behavior")
+                    .span("Tab 鍵行為")
                     .with_style(UiComponentStyles {
                         font_size: Some(CONTENT_FONT_SIZE + 1.),
                         ..Default::default()

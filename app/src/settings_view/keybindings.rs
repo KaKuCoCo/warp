@@ -44,13 +44,13 @@ const ROW_LEFT_MARGIN: f32 = 20.0;
 const ROW_HEIGHT: f32 = 28.;
 const EDIT_BUTTONS_BORDER_RADIUS: f32 = 4.0;
 
-pub const SEARCH_PLACEHOLDER: &str = "Search by name or by keys (ex. \"cmd d\")";
-const SHORTCUT_CONFLICT_WARNING_TEXT: &str = "This shortcut conflicts with other keybinds";
+pub const SEARCH_PLACEHOLDER: &str = "依名稱或按鍵搜尋（例如「cmd d」）";
+const SHORTCUT_CONFLICT_WARNING_TEXT: &str = "此快速鍵與其他快速鍵衝突";
 const KEYBINDINGS_PAGE_SHORTCUT: &str = "workspace:toggle_keybindings_page";
-const RESET_BUTTON_TEXT: &str = "Default";
-const CANCEL_BUTTON_TEXT: &str = "Cancel";
-const CLEAR_BUTTON_TEXT: &str = "Clear";
-const SAVE_BUTTON_TEXT: &str = "Save";
+const RESET_BUTTON_TEXT: &str = "預設";
+const CANCEL_BUTTON_TEXT: &str = "取消";
+const CLEAR_BUTTON_TEXT: &str = "清除";
+const SAVE_BUTTON_TEXT: &str = "儲存";
 
 /// Notifier for custom keybinding changed. Views could subscribe to this for
 /// KeybindingChangedEvent.
@@ -323,7 +323,7 @@ impl KeybindingRow {
             Empty::new().finish()
         };
 
-        let press_new_shortcut_text = render_text("Press new keyboard shortcut", None, appearance);
+        let press_new_shortcut_text = render_text("按下新的鍵盤快速鍵", None, appearance);
 
         let new_shortcut_element = Container::new(press_new_shortcut_text)
             .with_margin_left(ROW_LEFT_MARGIN)
@@ -447,7 +447,7 @@ impl KeybindingRow {
                         )
                         .finish()
                     } else {
-                        render_button("Cancel", appearance, cancel_button_color)
+                        render_button("取消", appearance, cancel_button_color)
                     }
                 },
             )
@@ -970,7 +970,7 @@ impl KeybindingsWidget {
     ) -> Box<dyn Element> {
         let font_size = appearance.ui_font_size() + FONT_DELTA;
         let mut description = Flex::column().with_child(render_text(
-            "Add your own custom keybindings to existing actions below.",
+            "在下方為現有動作加入自訂快速鍵。",
             Some(UiComponentStyles {
                 font_size: Some(font_size),
                 font_color: Some(
@@ -996,7 +996,7 @@ impl KeybindingsWidget {
                 Wrap::row()
                     .with_child(
                         Container::new(render_text(
-                            "Use",
+                            "使用",
                             Some(UiComponentStyles {
                                 font_size: Some(font_size),
                                 font_color: Some(
@@ -1025,7 +1025,7 @@ impl KeybindingsWidget {
                     )
                     .with_child(
                         Container::new(render_text(
-                            "to reference these keybindings in a side pane at anytime.",
+                            "即可隨時在側邊窗格查看這些快速鍵。",
                             Some(UiComponentStyles {
                                 font_size: Some(font_size),
                                 font_color: Some(
@@ -1105,17 +1105,13 @@ impl SettingsWidget for KeybindingsWidget {
         {
             Some(LocalOnlyIconState::Visible {
                 mouse_state: self.local_only_icon_mouse_state.clone(),
-                custom_tooltip: Some("Keyboard shortcuts are not synced to the cloud".to_string()),
+                custom_tooltip: Some("鍵盤快速鍵不會同步到雲端".to_string()),
             })
         } else {
             None
         };
 
-        let subheader = render_sub_header(
-            appearance,
-            "Configure keyboard shortcuts",
-            local_only_icon_state,
-        );
+        let subheader = render_sub_header(appearance, "設定鍵盤快速鍵", local_only_icon_state);
         let description = self.render_description(view.bindings.as_ref(), appearance);
 
         Flex::column()
@@ -1123,7 +1119,7 @@ impl SettingsWidget for KeybindingsWidget {
             .with_child(description)
             .with_child(render_columns(
                 Container::new(render_text(
-                    "Command",
+                    "命令",
                     Some(UiComponentStyles {
                         font_size: Some(appearance.ui_font_size() + FONT_DELTA),
                         ..Default::default()
