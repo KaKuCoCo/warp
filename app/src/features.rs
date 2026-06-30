@@ -22,7 +22,7 @@ fn enabled_features() -> HashSet<FeatureFlag> {
         flags.extend(RELEASE_FLAGS);
     }
 
-    flags.extend([
+    let compile_time_flags: &[FeatureFlag] = &[
         #[cfg(feature = "autoupdate")]
         FeatureFlag::Autoupdate,
         #[cfg(feature = "changelog")]
@@ -507,7 +507,9 @@ fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::GeminiEnterprise,
         #[cfg(feature = "prompt_cache_expiry_warning")]
         FeatureFlag::PromptCacheExpiryWarning,
-    ]);
+    ];
+
+    flags.extend(compile_time_flags.iter().copied());
 
     flags
 }

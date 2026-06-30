@@ -162,11 +162,19 @@ foreach ($entry in $AdditionalLicenses) {
 # Generate settings JSON schema unless explicitly skipped.
 if ($env:SKIP_SETTINGS_SCHEMA -ne '1') {
     $SchemaOutput = Join-Path $DestinationDir 'settings_schema.json'
-    Write-Output "Generating settings schema at $SchemaOutput"
+
+    # Schema generation links the app crate but only emits JSON, so avoid the
+    # release bundle profile unless explicitly requested.
+    $SchemaCargoProfile = $env:SETTINGS_SCHEMA_CARGO_PROFILE
+    if ([string]::IsNullOrWhiteSpace($SchemaCargoProfile)) {
+        $SchemaCargoProfile = 'dev'
+    }
+
+    Write-Output "Generating settings schema at $SchemaOutput with cargo profile $SchemaCargoProfile"
 
     $SchemaCmd = @('run')
-    if ($CargoProfile) {
-        $SchemaCmd += @('--profile', $CargoProfile)
+    if ($SchemaCargoProfile -and ($SchemaCargoProfile -ne 'dev')) {
+        $SchemaCmd += @('--profile', $SchemaCargoProfile)
     }
     $SchemaCmd += @('--manifest-path', (Join-Path $RepoRoot 'Cargo.toml'), '--bin', 'generate_settings_schema', '--')
     if ($Channel) {

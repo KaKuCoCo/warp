@@ -4,6 +4,28 @@
 
 ## Unreleased
 
+- 新增 `settings-zh-tw` local patch：
+  - 將可見 Settings 內容翻譯為繁體中文，左側 Settings navigation 保持英文。
+  - 以 `localize_settings_text` / `settings_zh_tw_text` 集中處理通用 Settings 元件字串。
+  - Windows UI font 優先使用 `Microsoft JhengHei UI`，避免繁中文字顯示為 missing-glyph 方塊。
+- 在 `local/feature/warp-cloud-agent-removal` 第一階段實作 settings 強隱藏：
+  - sidebar 移除 Account、Billing、Teams、Referrals、Shared Blocks、Warp Drive、
+    Cloud platform 與官方 Warp Agent 子頁。
+  - Agents umbrella 只保留 `ThirdPartyCLIAgents`，MCP 改為獨立 settings page。
+  - search / direct navigation fallback 會將 hidden entrypoints 導到
+    `ThirdPartyCLIAgents`、`MCPServers` 或 `Appearance`。
+  - command palette、URI deeplink、local-control 不再額外封鎖 hidden settings 入口；
+    是否能實際渲染仍交由 settings page-level fallback 控制。
+  - AI settings local 模式只渲染 `CLIAgentWidget`，Privacy 移除官方 cloud / service
+    controls；Features 頁面恢復 upstream controls，不再做額外 local-only 隱藏。
+  - 將 local patch gate 集中到 `app/src/local_patches.rs`，並強制關閉 official
+    telemetry、crash reporting、cloud conversation storage 與 AI UGC telemetry。
+  - local sidebar 額外隱藏 Privacy，避免殘留 official Warp service controls。
+  - 修復本機 Windows MSVC test build 會因空 compile-time feature flag 列表無法推斷
+    型別的問題，並補上 `ai_page_handle` clone 讓 `cargo check` 通過。
+- 在 `local/feature/warp-cloud-agent-removal` 上重新盤點目前 `master` 的
+  settings navigation、search/deeplink/command palette 入口、AI/Privacy/Features
+  widgets 與測試衝突點。
 - 新增 root `AGENTS.md`，記錄 fork 維護、分支、worktree、版號、build、測試與
   changelog 規則。
 - 新增 `specs/local-patches/` 維護結構與 feature template。

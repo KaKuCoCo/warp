@@ -35,7 +35,10 @@ use super::settings_page::{
     SettingsPageViewHandle, SettingsWidget, ToggleState, HEADER_PADDING, PAGE_PADDING,
     TOGGLE_BUTTON_RIGHT_PADDING,
 };
-use super::{flags, SettingsAction, SettingsSection, ToggleSettingActionPair};
+use super::{
+    flags, is_local_warp_cloud_ui_disabled, SettingsAction, SettingsSection,
+    ToggleSettingActionPair,
+};
 use crate::appearance::Appearance;
 use crate::auth::auth_manager::AuthManager;
 use crate::channel::ChannelState;
@@ -61,36 +64,32 @@ use crate::{report_if_error, send_telemetry_from_ctx};
 
 const FONT_SIZE: f32 = 12.;
 
-const SAFE_MODE_TITLE: &str = "Secret redaction";
+const SAFE_MODE_TITLE: &str = "密鑰遮蔽";
 static SAFE_MODE_DESCRIPTION: LazyLock<&'static str> = LazyLock::new(|| {
-    "When this setting is enabled, Warp will scan blocks, the contents of \
-        Warp Drive objects, and Oz prompts for potential sensitive \
-        information and prevent saving or sending this data to any \
-        servers. You can customize this list via regexes."
+    "啟用後，Warp 會掃描區塊、Warp Drive 物件內容與 Oz prompts 中可能的敏感資訊，\
+        並防止將這些資料儲存或傳送到任何伺服器。你可以透過 regex 自訂此清單。"
 });
-const USER_SECRET_REGEX_TITLE: &str = "Custom secret redaction";
+const USER_SECRET_REGEX_TITLE: &str = "自訂密鑰遮蔽";
 const USER_SECRET_REGEX_DESCRIPTION: &str =
-    "Use regex to define additional secrets or data you'd like to redact. This will take effect \
-    when the next command runs. You can use the inline (?i) flag as a prefix to your regex \
-    to make it case-insensitive.";
+    "使用 regex 定義其他要遮蔽的 secret 或資料。此設定會在下一個命令執行時生效。\
+    你可以在 regex 前加上 inline (?i) 旗標，讓比對不分大小寫。";
 const TELEMETRY_DESCRIPTION_OLD: &str =
-    "App analytics help us make the product better for you. We only collect \
-    app usage metadata, never console input or output.";
-const TELEMETRY_TITLE: &str = "Help improve Warp";
+    "App analytics 可協助我們把產品做得更好。我們只收集 App 使用中繼資料，\
+    絕不收集主控台輸入或輸出。";
+const TELEMETRY_TITLE: &str = "協助改善 Warp";
 const TELEMETRY_DESCRIPTION: &str =
-    "App analytics help us make the product better for you. We may collect \
-    certain console interactions to improve Warp's AI capabilities.";
+    "App analytics 可協助我們把產品做得更好。我們可能會收集特定主控台互動，\
+    以改善 Warp 的 AI 能力。";
 const TELEMETRY_DOCS_URL: &str =
     "https://docs.warp.dev/support-and-community/privacy-and-security/privacy#what-telemetry-data-does-warp-collect-and-why";
 
-const DATA_MANAGEMENT_TITLE: &str = "Manage your data";
+const DATA_MANAGEMENT_TITLE: &str = "管理你的資料";
 const DATA_MANAGEMENT_DESCRIPTION: &str =
-    "At any time, you may choose to delete your Warp account permanently. \
-    You will no longer be able to use Warp.";
-const DATA_MANAGEMENT_LINK_TEXT: &str = "Visit the data management page";
+    "你可以隨時選擇永久刪除 Warp 帳號。刪除後將無法再使用 Warp。";
+const DATA_MANAGEMENT_LINK_TEXT: &str = "前往資料管理頁面";
 
-const PRIVACY_POLICY_TITLE: &str = "Privacy policy";
-const PRIVACY_POLICY_LINK_TEXT: &str = "Read Warp's privacy policy";
+const PRIVACY_POLICY_TITLE: &str = "隱私權政策";
+const PRIVACY_POLICY_LINK_TEXT: &str = "閱讀 Warp 的隱私權政策";
 
 pub fn data_management_url(custom_token: Option<&str>) -> String {
     match custom_token {
@@ -154,7 +153,7 @@ impl PrivacyPageView {
         });
 
         let add_regex_modal_view = ctx.add_typed_action_view(|ctx| {
-            Modal::new(Some("Add regex pattern".to_string()), add_regex_body, ctx)
+            Modal::new(Some("新增 regex 模式".to_string()), add_regex_body, ctx)
                 .with_modal_style(UiComponentStyles {
                     width: Some(600.),
                     height: Some(400.),
@@ -223,17 +222,20 @@ impl PrivacyPageView {
     }
 
     fn build_page() -> PageType<Self> {
-        let mut widgets: Vec<Box<dyn SettingsWidget<View = Self>>> = vec![
-            Box::new(SecretRedactionWidget::default()),
-            Box::new(AppAnalyticsWidget::default()),
-            Box::new(CrashReportsWidget::default()),
-            Box::new(CloudConversationStorageWidget::default()),
-        ];
+        let mut widgets: Vec<Box<dyn SettingsWidget<View = Self>>> =
+            vec![Box::new(SecretRedactionWidget::default())];
+        if !is_local_warp_cloud_ui_disabled() {
+            widgets.push(Box::new(AppAnalyticsWidget::default()));
+            widgets.push(Box::new(CrashReportsWidget::default()));
+            widgets.push(Box::new(CloudConversationStorageWidget::default()));
+        }
         if ContextFlag::NetworkLogConsole.is_enabled() {
             widgets.push(Box::new(NetworkLogWidget::default()));
         }
-        widgets.push(Box::new(DataManagementWidget::default()));
-        widgets.push(Box::new(PrivacyPolicyWidget::default()));
+        if !is_local_warp_cloud_ui_disabled() {
+            widgets.push(Box::new(DataManagementWidget::default()));
+            widgets.push(Box::new(PrivacyPolicyWidget::default()));
+        }
         PageType::new_uncategorized(widgets, Some("Privacy"))
     }
 
@@ -758,7 +760,7 @@ impl SecretRedactionWidget {
             .count();
 
         let personal_tab = self.render_tab(
-            "Personal".to_string(),
+            "個人".to_string(),
             personal_count,
             SecretRedactionTab::Personal,
             active_tab == SecretRedactionTab::Personal,
@@ -769,7 +771,7 @@ impl SecretRedactionWidget {
         let is_enterprise_tab_active = active_tab == SecretRedactionTab::Enterprise;
 
         let enterprise_tab = self.render_tab(
-            "Enterprise".to_string(),
+            "企業".to_string(),
             enterprise_count,
             SecretRedactionTab::Enterprise,
             is_enterprise_tab_active,
@@ -784,10 +786,7 @@ impl SecretRedactionWidget {
 
         if is_enterprise_tab_active {
             row.add_child(Shrinkable::new(1., Empty::new().finish()).finish());
-            row.add_child(self.render_info(
-                "Enterprise secret redaction cannot be modified.".to_string(),
-                appearance,
-            ));
+            row.add_child(self.render_info("無法修改企業密鑰遮蔽設定。".to_string(), appearance));
         }
 
         Container::new(row.finish())
@@ -904,7 +903,7 @@ impl SecretRedactionWidget {
 
         if enterprise_regex_list.is_empty() {
             return ui_builder
-                .paragraph("No enterprise regexes have been configured by your organization.")
+                .paragraph("你的組織尚未設定任何企業 regex。")
                 .with_style(UiComponentStyles {
                     font_color: Some(description_text_color),
                     ..Default::default()
@@ -1003,9 +1002,7 @@ impl SecretRedactionWidget {
                         .with_main_axis_size(MainAxisSize::Max)
                         .with_main_axis_alignment(MainAxisAlignment::SpaceBetween)
                         .with_cross_axis_alignment(CrossAxisAlignment::Center)
-                        .with_child(
-                            self.render_section_title("Recommended".to_string(), appearance),
-                        )
+                        .with_child(self.render_section_title("建議".to_string(), appearance))
                         .with_child(
                             Container::new(
                                 ui_builder
@@ -1014,7 +1011,8 @@ impl SecretRedactionWidget {
                                         self.add_all_button_mouse_state.clone(),
                                     )
                                     .with_text_and_icon_label(Self::add_button(
-                                        "Add all", appearance,
+                                        "全部新增",
+                                        appearance,
                                     ))
                                     .with_style(Self::add_button_style())
                                     .build()
@@ -1179,10 +1177,7 @@ impl SettingsWidget for SecretRedactionWidget {
                 .with_child(
                     Container::new({
                         if is_enterprise_enabled {
-                            self.render_info(
-                                "Enabled by your organization.".to_string(),
-                                appearance,
-                            )
+                            self.render_info("已由你的組織啟用。".to_string(), appearance)
                         } else {
                             ui_builder
                                 .switch(self.switch_state.clone())
@@ -1233,7 +1228,7 @@ impl SettingsWidget for SecretRedactionWidget {
 
             // Create the label with local-only icon if needed
             let label_with_icon = super::settings_page::render_dropdown_item_label(
-                "Secret visual redaction mode".to_string(),
+                "密鑰視覺遮蔽模式".to_string(),
                 None,
                 local_only_icon_state,
                 None,
@@ -1247,7 +1242,7 @@ impl SettingsWidget for SecretRedactionWidget {
                     Container::new(
                         ui_builder
                             .paragraph(
-                                "Choose how secrets are visually presented in the block list while keeping them searchable. This setting only affects what you see in the block list.",
+                                "選擇密鑰在區塊清單中的視覺呈現方式，同時保持可搜尋。此設定只影響你在區塊清單中看到的內容。",
                             )
                             .with_style(UiComponentStyles {
                                 font_color: Some(description_text_color),
@@ -1318,7 +1313,7 @@ impl SettingsWidget for SecretRedactionWidget {
                                 ButtonVariant::Secondary,
                                 self.add_regex_button_mouse_state.clone(),
                             )
-                            .with_text_and_icon_label(Self::add_button("Add regex", appearance))
+                            .with_text_and_icon_label(Self::add_button("新增 regex", appearance))
                             .with_style(Self::add_button_style())
                             .build()
                             .on_click(move |ctx, _, _| {
@@ -1396,8 +1391,7 @@ impl AppAnalyticsWidget {
             let mut stack = Stack::new().with_child(badge);
             if is_hovered {
                 let tooltip = ui_builder.tool_tip(
-                    "Your administrator has enabled zero data retention for your team. User generated content will never be collected."
-                        .to_string(),
+                    "你的管理員已為團隊啟用零資料保留。不會收集使用者產生的內容。".to_string(),
                 );
                 stack.add_positioned_child(
                     tooltip.build().finish(),
@@ -1507,7 +1501,7 @@ impl SettingsWidget for AppAnalyticsWidget {
         } else {
             switch
                 .with_tooltip(TooltipConfig {
-                    text: "This setting is managed by your organization.".to_string(),
+                    text: "此設定由你的組織管理。".to_string(),
                     styles: ui_builder.default_tool_tip_styles(),
                 })
                 .disable()
@@ -1542,7 +1536,7 @@ impl SettingsWidget for AppAnalyticsWidget {
             Align::new(
                 ui_builder
                     .link(
-                        "Read more about Warp's use of data".into(),
+                        "深入了解 Warp 如何使用資料".into(),
                         Some(TELEMETRY_DOCS_URL.into()),
                         None,
                         self.docs_link_mouse_state.clone(),
@@ -1610,10 +1604,7 @@ impl SettingsWidget for CrashReportsWidget {
             ))
             .with_child(
                 ui_builder
-                    .paragraph(
-                        "Crash reports assist with debugging and stability improvements."
-                            .to_owned(),
-                    )
+                    .paragraph("當機報告可協助除錯並改善穩定性。".to_owned())
                     .with_style(UiComponentStyles {
                         font_color: Some(
                             appearance
@@ -1696,7 +1687,7 @@ impl SettingsWidget for CloudConversationStorageWidget {
         } else {
             switch
                 .with_tooltip(TooltipConfig {
-                    text: "This setting is managed by your organization.".to_string(),
+                    text: "此設定由你的組織管理。".to_string(),
                     styles: ui_builder.default_tool_tip_styles(),
                 })
                 .disable()
@@ -1718,13 +1709,11 @@ impl SettingsWidget for CloudConversationStorageWidget {
                 ui_builder
                     .paragraph(
                         if is_checked {
-                            "Agent conversations can be shared with others and are retained \
-                            when you log in on different devices. This data is only stored \
-                            for product functionality, and Warp will not use it for analytics."
+                            "Agent 對話可與他人分享，且會在你登入不同裝置時保留。\
+                            這些資料只會為產品功能而儲存，Warp 不會將其用於分析。"
                         } else {
-                            "Agent conversations are only stored locally on your machine, are \
-                            lost upon logout, and cannot be shared. Note: conversation data \
-                            for ambient agents are still stored in the cloud."
+                            "Agent 對話只會儲存在本機，登出後會遺失，且無法分享。\
+                            注意：背景 Agent 的對話資料仍會儲存在雲端。"
                         }
                         .to_owned(),
                     )
@@ -1782,9 +1771,8 @@ impl SettingsWidget for NetworkLogWidget {
             .with_child(
                 ui_builder
                     .paragraph(
-                        "We've built a native console that allows you to view all communications \
-                        from Warp to external servers to ensure you feel comfortable that your \
-                        work is always kept safe."
+                        "我們內建了原生主控台，讓你查看 Warp 與外部伺服器之間的所有通訊，\
+                        確保你能安心知道工作內容始終受到保護。"
                             .to_owned(),
                     )
                     .with_style(UiComponentStyles {
@@ -1808,7 +1796,7 @@ impl SettingsWidget for NetworkLogWidget {
                 Align::new(
                     ui_builder
                         .link(
-                            "View network logging".to_owned(),
+                            "查看網路記錄".to_owned(),
                             None,
                             Some(Box::new(|ctx| {
                                 ctx.dispatch_typed_action(PrivacyPageAction::LaunchNetworkLogging);
@@ -1959,24 +1947,28 @@ pub fn init_actions_from_parent_view<T: Action + Clone>(
     context: &ContextPredicate,
     builder: fn(SettingsAction) -> T,
 ) {
-    let mut toggle_binding_pairs = vec![
-        ToggleSettingActionPair::new(
-            "app analytics",
-            builder(SettingsAction::PrivacyPageToggle(
-                PrivacyPageAction::ToggleTelemetry,
-            )),
-            context,
-            flags::TELEMETRY_FLAG,
-        ),
-        ToggleSettingActionPair::new(
-            "crash reporting",
-            builder(SettingsAction::PrivacyPageToggle(
-                PrivacyPageAction::ToggleCrashReporting,
-            )),
-            context,
-            flags::CRASH_REPORTING_FLAG,
-        ),
-    ];
+    let mut toggle_binding_pairs = vec![];
+
+    if !is_local_warp_cloud_ui_disabled() {
+        toggle_binding_pairs.extend([
+            ToggleSettingActionPair::new(
+                "app analytics",
+                builder(SettingsAction::PrivacyPageToggle(
+                    PrivacyPageAction::ToggleTelemetry,
+                )),
+                context,
+                flags::TELEMETRY_FLAG,
+            ),
+            ToggleSettingActionPair::new(
+                "crash reporting",
+                builder(SettingsAction::PrivacyPageToggle(
+                    PrivacyPageAction::ToggleCrashReporting,
+                )),
+                context,
+                flags::CRASH_REPORTING_FLAG,
+            ),
+        ]);
+    }
 
     toggle_binding_pairs.push(ToggleSettingActionPair::new(
         "secret redaction",
@@ -1987,19 +1979,21 @@ pub fn init_actions_from_parent_view<T: Action + Clone>(
         flags::SAFE_MODE_FLAG,
     ));
 
-    toggle_binding_pairs.push(
-        ToggleSettingActionPair::new(
-            "cloud AI conversation storage",
-            builder(SettingsAction::PrivacyPageToggle(
-                PrivacyPageAction::ToggleCloudConversationStorage,
-            )),
-            &(context.clone()
-                & id!(flags::IS_ANY_AI_ENABLED)
-                & id!(flags::CLOUD_CONVERSATION_STORAGE_EDITABLE_FLAG)),
-            flags::CLOUD_CONVERSATION_STORAGE_FLAG,
-        )
-        .with_enabled(|| FeatureFlag::CloudConversations.is_enabled()),
-    );
+    if !is_local_warp_cloud_ui_disabled() {
+        toggle_binding_pairs.push(
+            ToggleSettingActionPair::new(
+                "cloud AI conversation storage",
+                builder(SettingsAction::PrivacyPageToggle(
+                    PrivacyPageAction::ToggleCloudConversationStorage,
+                )),
+                &(context.clone()
+                    & id!(flags::IS_ANY_AI_ENABLED)
+                    & id!(flags::CLOUD_CONVERSATION_STORAGE_EDITABLE_FLAG)),
+                flags::CLOUD_CONVERSATION_STORAGE_FLAG,
+            )
+            .with_enabled(|| FeatureFlag::CloudConversations.is_enabled()),
+        );
+    }
 
     ToggleSettingActionPair::add_toggle_setting_action_pairs_as_bindings(toggle_binding_pairs, app);
 }

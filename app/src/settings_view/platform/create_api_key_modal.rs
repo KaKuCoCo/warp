@@ -48,14 +48,10 @@ impl ApiKeyType {
     fn description(&self) -> &'static str {
         match self {
             ApiKeyType::Personal => {
-                "This API key is tied to your user and can make requests against your Warp account."
+                "這個 API key 會綁定到你的使用者，並可對你的 Warp 帳號發出請求。"
             }
-            ApiKeyType::Team => {
-                "This API key is tied to your team and can make requests on behalf of your team."
-            }
-            ApiKeyType::Agent => {
-                "This API key is tied to an agent and can make requests on behalf of the agent."
-            }
+            ApiKeyType::Team => "這個 API key 會綁定到你的團隊，並可代表你的團隊發出請求。",
+            ApiKeyType::Agent => "這個 API key 會綁定到 Agent，並可代表該 Agent 發出請求。",
         }
     }
 }
@@ -90,10 +86,10 @@ pub(crate) enum ExpirationOption {
 impl ExpirationOption {
     fn display_text(&self) -> &'static str {
         match self {
-            ExpirationOption::OneDay => "1 day",
-            ExpirationOption::ThirtyDays => "30 days",
-            ExpirationOption::NinetyDays => "90 days",
-            ExpirationOption::Never => "Never",
+            ExpirationOption::OneDay => "1 天",
+            ExpirationOption::ThirtyDays => "30 天",
+            ExpirationOption::NinetyDays => "90 天",
+            ExpirationOption::Never => "永不",
         }
     }
 
@@ -197,8 +193,8 @@ impl CreateApiKeyModal {
                         icon_color: theme.active_ui_text_color().into(),
                         label: Some(LabelConfig {
                             label: match key_type {
-                                ApiKeyType::Personal => "Personal".into(),
-                                ApiKeyType::Team => "Team".into(),
+                                ApiKeyType::Personal => "個人".into(),
+                                ApiKeyType::Team => "團隊".into(),
                                 ApiKeyType::Agent => "Agent".into(),
                             },
                             width_override: Some(55.0),
@@ -296,8 +292,7 @@ impl CreateApiKeyModal {
                     Err(err) => {
                         log::error!("Failed to load agent identities: {err}");
                         ctx.emit(CreateApiKeyModalEvent::Error {
-                            message: "Failed to load agents. Please close and try again."
-                                .to_string(),
+                            message: "無法載入 Agents。請關閉後再試一次。".to_string(),
                         });
                     }
                 }
@@ -364,7 +359,7 @@ impl CreateApiKeyModal {
                 None => {
                     self.request_state = RequestState::Idle;
                     ctx.emit(CreateApiKeyModalEvent::Error {
-                        message: "Please select an agent.".to_string(),
+                        message: "請選取 Agent。".to_string(),
                     });
                     ctx.notify();
                     return;
@@ -381,9 +376,7 @@ impl CreateApiKeyModal {
                 None => {
                     self.request_state = RequestState::Idle;
                     ctx.emit(CreateApiKeyModalEvent::Error {
-                        message:
-                            "Unable to create a team API key because there is no current team."
-                                .to_string(),
+                        message: "無法建立團隊 API key，因為目前沒有團隊。".to_string(),
                     });
                     ctx.notify();
                     return;
@@ -414,7 +407,7 @@ impl CreateApiKeyModal {
                     }
                     Ok(warp_graphql::mutations::generate_api_key::GenerateApiKeyResult::Unknown) | Err(_) => {
                         me.request_state = RequestState::Idle;
-                        ctx.emit(CreateApiKeyModalEvent::Error { message: "Failed to create API key. Please try again.".to_string() });
+                        ctx.emit(CreateApiKeyModalEvent::Error { message: "無法建立 API key。請再試一次。".to_string() });
                         ctx.notify();
                     }
                 }
@@ -490,7 +483,7 @@ impl CreateApiKeyModal {
         };
 
         let info = Text::new(
-            "This secret key is shown only once. Copy and store it securely.",
+            "這個 secret key 只會顯示一次。請複製並安全保存。",
             appearance.ui_font_family(),
             LABEL_FONT_SIZE,
         )
@@ -512,9 +505,9 @@ impl CreateApiKeyModal {
         .finish();
 
         let copy_label = if self.raw_key_copied {
-            "Copied"
+            "已複製"
         } else {
-            "Copy"
+            "複製"
         };
         let copy_icon = if self.raw_key_copied {
             warp_core::ui::icons::Icon::Check.to_warpui_icon(appearance.theme().background())
@@ -563,7 +556,7 @@ impl CreateApiKeyModal {
                 ButtonVariant::Accent,
                 self.cancel_button_mouse_state.clone(),
             )
-            .with_text_label("Done".to_string())
+            .with_text_label("完成".to_string())
             .with_style(button_style)
             .build()
             .on_click(|ctx, _, _| ctx.dispatch_typed_action(CreateApiKeyModalAction::Cancel))
@@ -623,7 +616,7 @@ impl View for CreateApiKeyModal {
                         FormattedText::new([FormattedTextLine::Line(vec![
                             FormattedTextFragment::plain_text(selected_key_type.description()),
                             FormattedTextFragment::plain_text(" "),
-                            FormattedTextFragment::hyperlink("Learn more", API_KEY_DOCS_URL),
+                            FormattedTextFragment::hyperlink("深入了解", API_KEY_DOCS_URL),
                         ])]),
                         LABEL_FONT_SIZE,
                         appearance.ui_font_family(),
@@ -646,7 +639,7 @@ impl View for CreateApiKeyModal {
                     .finish()
                 };
 
-                let name_label = Text::new("Name", appearance.ui_font_family(), LABEL_FONT_SIZE)
+                let name_label = Text::new("名稱", appearance.ui_font_family(), LABEL_FONT_SIZE)
                     .with_color(theme.active_ui_text_color().into())
                     .finish();
 
@@ -662,7 +655,7 @@ impl View for CreateApiKeyModal {
                         ButtonVariant::Secondary,
                         self.cancel_button_mouse_state.clone(),
                     )
-                    .with_text_label("Cancel".to_string())
+                    .with_text_label("取消".to_string())
                     .with_style(button_style)
                     .build()
                     .on_click(move |ctx, _, _| {
@@ -680,9 +673,9 @@ impl View for CreateApiKeyModal {
                         self.create_button_mouse_state.clone(),
                     )
                     .with_text_label(if is_pending {
-                        "Creating…".to_string()
+                        "建立中...".to_string()
                     } else {
-                        "Create key".to_string()
+                        "建立 key".to_string()
                     })
                     .with_style(button_style)
                     .build()
@@ -711,7 +704,7 @@ impl View for CreateApiKeyModal {
 
                 if self.has_team || self.has_named_agents {
                     let type_label =
-                        Text::new("Type", appearance.ui_font_family(), LABEL_FONT_SIZE)
+                        Text::new("類型", appearance.ui_font_family(), LABEL_FONT_SIZE)
                             .with_color(theme.active_ui_text_color().into())
                             .finish();
                     col.add_child(Container::new(type_label).with_margin_bottom(4.).finish());
@@ -740,7 +733,7 @@ impl View for CreateApiKeyModal {
 
                     if !self.is_loading_agents && available_agents.is_empty() {
                         let empty_text = Text::new(
-                            "No agents available. Create one first.",
+                            "沒有可用的 Agents。請先建立一個。",
                             appearance.ui_font_family(),
                             LABEL_FONT_SIZE,
                         )
@@ -753,7 +746,7 @@ impl View for CreateApiKeyModal {
                                 ButtonVariant::Secondary,
                                 self.create_agent_button_mouse_state.clone(),
                             )
-                            .with_text_label("Create agent".to_string())
+                            .with_text_label("建立 Agent".to_string())
                             .with_style(button_style)
                             .build()
                             .on_click(|ctx, _, _| {
@@ -819,7 +812,7 @@ impl View for CreateApiKeyModal {
                 );
 
                 let expiration_label =
-                    Text::new("Expiration", appearance.ui_font_family(), LABEL_FONT_SIZE)
+                    Text::new("到期時間", appearance.ui_font_family(), LABEL_FONT_SIZE)
                         .with_color(theme.active_ui_text_color().into())
                         .finish();
 
@@ -879,7 +872,7 @@ impl TypedActionView for CreateApiKeyModal {
                 let window_id = ctx.window_id();
                 crate::ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
                     let toast = crate::view_components::DismissibleToast::success(
-                        "Secret key copied.".to_string(),
+                        "Secret key 已複製。".to_string(),
                     );
                     toast_stack.add_ephemeral_toast(toast, window_id, ctx);
                 });

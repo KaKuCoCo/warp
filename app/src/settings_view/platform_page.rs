@@ -171,7 +171,7 @@ impl PlatformPageView {
                 ..Default::default()
             };
             let mut editor = EditorView::single_line(options, ctx);
-            editor.set_placeholder_text("Search API keys", ctx);
+            editor.set_placeholder_text("搜尋 API keys", ctx);
             editor
         });
         ctx.subscribe_to_view(&api_key_search_editor, |me, _, event, ctx| {
@@ -186,7 +186,7 @@ impl PlatformPageView {
         });
 
         let create_api_key_modal_view = ctx.add_typed_action_view(|ctx| {
-            Modal::new(Some("New API key".to_string()), create_api_key_body, ctx)
+            Modal::new(Some("新增 API key".to_string()), create_api_key_body, ctx)
                 .with_modal_style(UiComponentStyles {
                     width: Some(MODAL_WIDTH),
                     height: Some(MODAL_HEIGHT),
@@ -237,7 +237,7 @@ impl PlatformPageView {
 
     fn show_create_api_key_modal(&mut self, ctx: &mut ViewContext<Self>) {
         self.create_api_key_modal_state
-            .set_title(Some("New API key".to_string()), ctx);
+            .set_title(Some("新增 API key".to_string()), ctx);
         self.create_api_key_modal_state.open(ctx);
         ctx.emit(PlatformPageViewEvent::ShowCreateApiKeyModal);
     }
@@ -266,7 +266,7 @@ impl PlatformPageView {
             }
             CreateApiKeyModalEvent::Created { api_key } => {
                 self.create_api_key_modal_state
-                    .set_title(Some("Save your key".to_string()), ctx);
+                    .set_title(Some("儲存你的 key".to_string()), ctx);
                 let ui_key = APIKeyProperties::from(api_key);
                 self.ensure_expire_button_for_key(ctx, ui_key.uid.clone());
                 self.api_keys.push(ui_key);
@@ -320,7 +320,7 @@ impl PlatformPageView {
                 let window_id = ctx.window_id();
                 crate::ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
                     let toast = crate::view_components::DismissibleToast::success(
-                        "API key deleted".to_string(),
+                        "API key 已刪除".to_string(),
                     );
                     toast_stack.add_ephemeral_toast(toast, window_id, ctx);
                 });
@@ -489,8 +489,8 @@ impl PlatformPageWidget {
         appearance: &Appearance,
     ) -> Box<dyn Element> {
         let text = vec![
-            FormattedTextFragment::plain_text("Create and manage API keys to allow other Oz cloud agents to access your Warp account.\nFor more information, visit the "),
-            FormattedTextFragment::hyperlink("Documentation.", API_KEY_DOCS_URL),
+            FormattedTextFragment::plain_text("建立與管理 API keys，讓其他 Oz cloud agents 能存取你的 Warp 帳號。\n如需更多資訊，請查看"),
+            FormattedTextFragment::hyperlink("文件。", API_KEY_DOCS_URL),
         ];
 
         let text_element = FormattedTextElement::new(
@@ -537,7 +537,7 @@ impl PlatformPageWidget {
                             ButtonVariant::Outlined,
                             self.create_api_key_button_mouse_state.clone(),
                         )
-                        .with_text_label("+ Create API Key".to_string())
+                        .with_text_label("+ 建立 API key".to_string())
                         .build()
                         .on_click(|ctx, _, _| {
                             ctx.dispatch_typed_action(PlatformPageAction::ShowCreateApiKeyModal);
@@ -603,7 +603,7 @@ impl PlatformPageWidget {
             .with_main_axis_size(MainAxisSize::Max);
         header_row.add_child(self.render_resizable_header_cell(
             appearance,
-            "Name",
+            "名稱",
             view.api_key_table_column_widths.name.clone(),
             API_KEY_NAME_COLUMN_MIN_WIDTH,
             min_non_resizable_columns_width,
@@ -615,18 +615,15 @@ impl PlatformPageWidget {
                 .finish(),
         );
         if show_scope_column {
-            header_row.add_child(
-                Expanded::new(1., self.render_header_cell(appearance, "Scope")).finish(),
-            );
+            header_row
+                .add_child(Expanded::new(1., self.render_header_cell(appearance, "範圍")).finish());
         }
         header_row
-            .add_child(Expanded::new(1., self.render_header_cell(appearance, "Created")).finish());
-        header_row.add_child(
-            Expanded::new(1., self.render_header_cell(appearance, "Last used")).finish(),
-        );
-        header_row.add_child(
-            Expanded::new(1., self.render_header_cell(appearance, "Expires at")).finish(),
-        );
+            .add_child(Expanded::new(1., self.render_header_cell(appearance, "建立時間")).finish());
+        header_row
+            .add_child(Expanded::new(1., self.render_header_cell(appearance, "上次使用")).finish());
+        header_row
+            .add_child(Expanded::new(1., self.render_header_cell(appearance, "到期時間")).finish());
         header_row.add_child(Expanded::new(0.5, self.render_header_cell(appearance, "")).finish());
 
         Container::new(header_row.finish())
@@ -722,11 +719,11 @@ impl PlatformPageWidget {
         let last_used = key
             .last_used_at
             .map(format_approx_duration_from_now_utc)
-            .unwrap_or_else(|| "Never".to_owned());
+            .unwrap_or_else(|| "從未使用".to_owned());
         let expires_at = key
             .expires_at
             .map(|dt| format!("{}", dt.format("%b %-d, %Y")))
-            .unwrap_or_else(|| "Never".to_owned());
+            .unwrap_or_else(|| "永不".to_owned());
         let name_column_width = view.api_key_table_column_widths.name_width();
         let key_column_width = API_KEY_KEY_COLUMN_WIDTH;
         let mut row = Flex::row()
@@ -767,8 +764,8 @@ impl PlatformPageWidget {
         );
         if FeatureFlag::TeamApiKeys.is_enabled() || FeatureFlag::NamedAgents.is_enabled() {
             let scope_display = match key.scope {
-                ApiKeyScope::Personal => "Personal",
-                ApiKeyScope::Team => "Team",
+                ApiKeyScope::Personal => "個人",
+                ApiKeyScope::Team => "團隊",
                 ApiKeyScope::Agent => "Agent",
             };
             row.add_child(
@@ -857,7 +854,7 @@ impl PlatformPageWidget {
                     .with_child(
                         Container::new(
                             Text::new(
-                                "No API Keys",
+                                "沒有 API keys",
                                 appearance.ui_font_family(),
                                 SUBHEADER_FONT_SIZE,
                             )
@@ -871,7 +868,7 @@ impl PlatformPageWidget {
                     .with_child(
                         Container::new(
                             Text::new(
-                                "Create a key to manage external access to Warp",
+                                "建立 key 來管理對 Warp 的外部存取",
                                 appearance.ui_font_family(),
                                 CONTENT_FONT_SIZE,
                             )
@@ -892,7 +889,7 @@ impl PlatformPageWidget {
     fn render_no_search_results(&self, appearance: &Appearance) -> Box<dyn Element> {
         Container::new(
             Text::new(
-                "No API keys match your search",
+                "沒有符合搜尋的 API keys",
                 appearance.ui_font_family(),
                 CONTENT_FONT_SIZE,
             )

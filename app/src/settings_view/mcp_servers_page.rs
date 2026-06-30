@@ -50,7 +50,7 @@ pub enum InstallOrigin {
     Deeplink,
 }
 
-const PAGE_TITLE_TEXT: &str = "MCP Servers";
+const PAGE_TITLE_TEXT: &str = "MCP 伺服器";
 #[derive(Debug, Default, Copy, Clone)]
 pub enum MCPServersSettingsPage {
     #[default]
@@ -148,8 +148,8 @@ impl MCPServersSettingsPageView {
         ctx: &mut ViewContext<Self>,
     ) {
         let message = match server_name {
-            Some(name) => format!("Successfully logged out of {name} MCP server"),
-            None => "Successfully logged out of MCP server".to_string(),
+            Some(name) => format!("已成功登出 {name} MCP 伺服器"),
+            None => "已成功登出 MCP 伺服器".to_string(),
         };
         match item_id {
             ServerCardItemId::TemplatableMCP(_) => {
@@ -316,7 +316,7 @@ impl MCPServersSettingsPageView {
                 "Ignoring MCP deeplink autoinstall for '{autoinstall_param}': installation modal already open"
             );
             self.add_error_toast(
-                "Finish the current MCP install before opening another install link.".to_string(),
+                "請先完成目前的 MCP 安裝，再開啟其他安裝連結。".to_string(),
                 ctx,
             );
             return;
@@ -331,7 +331,7 @@ impl MCPServersSettingsPageView {
             log::warn!(
                 "Unrecognized autoinstall value '{autoinstall_param}': no matching gallery item found"
             );
-            self.add_error_toast(format!("Unknown MCP server '{autoinstall_param}'"), ctx);
+            self.add_error_toast(format!("找不到 MCP 伺服器「{autoinstall_param}」"), ctx);
             return;
         };
 
@@ -359,7 +359,7 @@ impl MCPServersSettingsPageView {
             // gallery entry cannot be turned into a valid template. Surface the
             // failure to the user rather than silently returning.
             self.add_error_toast(
-                format!("MCP server '{gallery_title}' cannot be installed from this link."),
+                format!("無法透過此連結安裝 MCP 伺服器「{gallery_title}」。"),
                 ctx,
             );
             return;

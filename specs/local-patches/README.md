@@ -37,7 +37,9 @@ v0.2026.06.03.09.49.stable_00-kakucoco.1
 3. `warp-cloud-agent-removal`：隱藏或停用 Warp login、cloud、billing、team、
    referral、官方 Warp Agent 與 Warp-managed cloud agent 介面，同時保留
    third-party CLI agents。
-4. 未來新增的 local patches，依此處列出的順序套用。
+4. `settings-zh-tw`：將可見 Settings 內容翻譯為繁體中文，並讓 Windows UI font
+   優先使用可顯示繁中文字的系統字型。
+5. 未來新增的 local patches，依此處列出的順序套用。
 
 新增、移除或調整 patch 順序時，必須在同一個 branch 更新此清單。
 
@@ -46,6 +48,7 @@ v0.2026.06.03.09.49.stable_00-kakucoco.1
 | Feature | 狀態 | 文件 |
 | --- | --- | --- |
 | `warp-cloud-agent-removal` | 規劃中 / 進行中 | `features/warp-cloud-agent-removal/` |
+| `settings-zh-tw` | 進行中 | `features/settings-zh-tw/` |
 
 ## Upgrade 檢查清單
 

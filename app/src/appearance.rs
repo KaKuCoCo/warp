@@ -330,13 +330,14 @@ fn load_default_ui_font_family(ctx: &mut AppContext) -> anyhow::Result<FamilyId>
             ],
         );
 
-        // On Windows, default to use Segoe UI as the UI font. This font is recommended by
-        // Windows when rendering any UI text: https://learn.microsoft.com/en-us/windows/win32/uxguide/vis-fonts.
-        // This font should be bundled with any modern version of Windows, if we can't load it for
-        // any reason we fallback to using our normal bundled font.
+        // LOCAL-PATCH(settings-zh-tw): Prefer a CJK-capable Windows UI font so translated
+        // Settings text does not render as missing-glyph boxes. If it is unavailable, keep the
+        // upstream Segoe UI fallback before falling back to bundled Roboto.
         #[cfg(windows)]
-        if let Ok(font_family_id) = font_cache.load_system_font("Segoe UI") {
-            return Ok(font_family_id);
+        for font_family in ["Microsoft JhengHei UI", "Microsoft JhengHei", "Segoe UI"] {
+            if let Ok(font_family_id) = font_cache.load_system_font(font_family) {
+                return Ok(font_family_id);
+            }
         }
 
         roboto

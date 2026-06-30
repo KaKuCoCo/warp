@@ -5,12 +5,14 @@ on:
       # order to update the cache if necessary.
       - master
     paths:
-      # We only need to run this if there were changes to files that affect
-      # the cache key.
+      # Run when files that affect the Windows target cache change.
       - 'Cargo.lock'
       - '**/Cargo.toml'
+      - '**/*.rs'
       - '.cargo/config.toml'
       - 'rust-toolchain.toml'
+      - '.github/workflows/build-windows-ime.yml'
+      - '.github/workflows/populate_build_cache.yml'
   # Run once per day to ensure the cache is populated even if we haven't
   # modified Cargo.lock or Cargo.toml in a while.
   schedule:
@@ -19,8 +21,46 @@ on:
 
 name: Populate Build Cache
 
+permissions:
+  contents: read
+
+concurrency:
+  group: populate-windows-local-warp-cache
+  cancel-in-progress: true
+
 jobs:
-  populate_build_cache:
-    name: CI
-    uses: ./.github/workflows/ci.yml
-    secrets: inherit
+  windows_local_warp_cache:
+    name: Windows Local WarpOss Cache
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: windows-ime-warp-oss
+          cache-on-failure: true
+          workspaces: |
+            . -> target
+
+      - name: Install protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          version: "31.x"
+
+      - name: Install release dependencies
+        shell: pwsh
+        run: |
+          cargo install --locked cargo-about@0.8.4
+
+      - name: Build WarpOss release binary cache
+        shell: pwsh
+        run: |
+          cargo build -p warp --profile rlto --bin warp-oss --features release_bundle,gui,nld_classifier_v3,nld_heuristic_v2 --target x86_64-pc-windows-msvc
+
+      - name: Build settings schema generator cache
+        shell: pwsh
+        run: |
+          cargo build -p warp --bin generate_settings_schema

@@ -282,6 +282,8 @@ pub enum SettingsSection {
     OzCloudAPIKeys,
 }
 
+pub(crate) use crate::local_patches::is_warp_cloud_agent_removal_enabled as is_local_warp_cloud_ui_disabled;
+
 use std::fmt::{self, Display};
 
 use crate::util::bindings::custom_tag_to_keystroke;
@@ -289,27 +291,66 @@ use crate::util::bindings::custom_tag_to_keystroke;
 impl Display for SettingsSection {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SettingsSection::BillingAndUsage => write!(f, "Billing and usage"),
-            SettingsSection::Keybindings => write!(f, "Keyboard shortcuts"),
-            SettingsSection::SharedBlocks => write!(f, "Shared blocks"),
-            SettingsSection::MCPServers => write!(f, "MCP Servers"),
-            SettingsSection::Scripting => write!(f, "Scripting"),
+            SettingsSection::About => write!(f, "關於"),
+            SettingsSection::Account => write!(f, "帳號"),
+            SettingsSection::Appearance => write!(f, "外觀"),
+            SettingsSection::BillingAndUsage => write!(f, "帳單與用量"),
+            SettingsSection::Features => write!(f, "功能"),
+            SettingsSection::Keybindings => write!(f, "鍵盤快速鍵"),
+            SettingsSection::Privacy => write!(f, "隱私權"),
+            SettingsSection::Referrals => write!(f, "推薦"),
+            SettingsSection::SharedBlocks => write!(f, "共享區塊"),
+            SettingsSection::Teams => write!(f, "團隊"),
+            SettingsSection::MCPServers => write!(f, "MCP 伺服器"),
+            SettingsSection::Scripting => write!(f, "指令碼"),
             SettingsSection::WarpDrive => write!(f, "Warp Drive"),
+            SettingsSection::Warpify => write!(f, "Warpify"),
+            SettingsSection::AI => write!(f, "AI"),
             SettingsSection::WarpAgent => write!(f, "Warp Agent"),
-            SettingsSection::AgentProfiles => write!(f, "Profiles"),
-            SettingsSection::AgentMCPServers => write!(f, "MCP servers"),
-            SettingsSection::Knowledge => write!(f, "Knowledge"),
-            SettingsSection::ThirdPartyCLIAgents => write!(f, "Third party CLI agents"),
-            SettingsSection::CodeIndexing => write!(f, "Indexing and projects"),
-            SettingsSection::EditorAndCodeReview => write!(f, "Editor and Code Review"),
-            SettingsSection::CloudEnvironments => write!(f, "Environments"),
-            SettingsSection::OzCloudAPIKeys => write!(f, "Oz Cloud API Keys"),
-            _ => write!(f, "{self:?}"),
+            SettingsSection::AgentProfiles => write!(f, "設定檔"),
+            SettingsSection::AgentMCPServers => write!(f, "MCP 伺服器"),
+            SettingsSection::Knowledge => write!(f, "知識"),
+            SettingsSection::ThirdPartyCLIAgents => write!(f, "第三方 CLI Agent"),
+            SettingsSection::Code => write!(f, "程式碼"),
+            SettingsSection::CodeIndexing => write!(f, "索引與專案"),
+            SettingsSection::EditorAndCodeReview => write!(f, "編輯器與程式碼審查"),
+            SettingsSection::CloudEnvironments => write!(f, "環境"),
+            SettingsSection::OzCloudAPIKeys => write!(f, "Oz Cloud API 金鑰"),
         }
     }
 }
 
 impl SettingsSection {
+    pub(crate) fn sidebar_label(&self) -> &'static str {
+        match self {
+            Self::About => "About",
+            Self::Account => "Account",
+            Self::Appearance => "Appearance",
+            Self::BillingAndUsage => "Billing and usage",
+            Self::Features => "Features",
+            Self::Keybindings => "Keyboard shortcuts",
+            Self::Privacy => "Privacy",
+            Self::Referrals => "Referrals",
+            Self::SharedBlocks => "Shared blocks",
+            Self::Teams => "Teams",
+            Self::MCPServers => "MCP Servers",
+            Self::Scripting => "Scripting",
+            Self::WarpDrive => "Warp Drive",
+            Self::Warpify => "Warpify",
+            Self::AI => "AI",
+            Self::WarpAgent => "Warp Agent",
+            Self::AgentProfiles => "Profiles",
+            Self::AgentMCPServers => "MCP servers",
+            Self::Knowledge => "Knowledge",
+            Self::ThirdPartyCLIAgents => "Third party CLI agents",
+            Self::Code => "Code",
+            Self::CodeIndexing => "Indexing and projects",
+            Self::EditorAndCodeReview => "Editor and Code Review",
+            Self::CloudEnvironments => "Environments",
+            Self::OzCloudAPIKeys => "Oz Cloud API Keys",
+        }
+    }
+
     /// Returns true if this section is a subpage under any umbrella.
     pub fn is_subpage(&self) -> bool {
         self.is_ai_subpage() || self.is_code_subpage() || self.is_cloud_platform_subpage()
@@ -355,13 +396,17 @@ impl SettingsSection {
 
     /// The ordered list of AI subpage sections shown under the Agents umbrella.
     pub fn ai_subpages() -> &'static [Self] {
-        &[
-            Self::WarpAgent,
-            Self::AgentProfiles,
-            Self::AgentMCPServers,
-            Self::Knowledge,
-            Self::ThirdPartyCLIAgents,
-        ]
+        if is_local_warp_cloud_ui_disabled() {
+            &[Self::ThirdPartyCLIAgents]
+        } else {
+            &[
+                Self::WarpAgent,
+                Self::AgentProfiles,
+                Self::AgentMCPServers,
+                Self::Knowledge,
+                Self::ThirdPartyCLIAgents,
+            ]
+        }
     }
 
     /// The ordered list of Code subpage sections shown under the Code umbrella.
@@ -372,6 +417,60 @@ impl SettingsSection {
     /// The ordered list of Cloud platform subpage sections.
     pub fn cloud_platform_subpages() -> &'static [Self] {
         &[Self::CloudEnvironments, Self::OzCloudAPIKeys]
+    }
+
+    pub(crate) fn is_hidden_by_local_warp_cloud_ui(&self) -> bool {
+        is_local_warp_cloud_ui_disabled()
+            && matches!(
+                self,
+                Self::Account
+                    | Self::BillingAndUsage
+                    | Self::Referrals
+                    | Self::SharedBlocks
+                    | Self::Teams
+                    | Self::WarpDrive
+                    | Self::Privacy
+                    | Self::WarpAgent
+                    | Self::AgentProfiles
+                    | Self::AgentMCPServers
+                    | Self::Knowledge
+                    | Self::CloudEnvironments
+                    | Self::OzCloudAPIKeys
+            )
+    }
+
+    fn hidden_backing_page_by_local_warp_cloud_ui(&self) -> bool {
+        is_local_warp_cloud_ui_disabled()
+            && matches!(
+                self,
+                Self::Account
+                    | Self::BillingAndUsage
+                    | Self::Referrals
+                    | Self::SharedBlocks
+                    | Self::Teams
+                    | Self::WarpDrive
+                    | Self::Privacy
+                    | Self::CloudEnvironments
+                    | Self::OzCloudAPIKeys
+            )
+    }
+
+    fn local_warp_cloud_ui_fallback(&self) -> Self {
+        if !is_local_warp_cloud_ui_disabled() {
+            return *self;
+        }
+
+        match self {
+            Self::AI
+            | Self::WarpAgent
+            | Self::AgentProfiles
+            | Self::Knowledge
+            | Self::ThirdPartyCLIAgents => Self::ThirdPartyCLIAgents,
+            Self::AgentMCPServers | Self::MCPServers => Self::MCPServers,
+            Self::Code => Self::CodeIndexing,
+            section if section.is_hidden_by_local_warp_cloud_ui() => Self::Appearance,
+            section => *section,
+        }
     }
 }
 
@@ -1279,7 +1378,7 @@ impl SettingsView {
 
         let mut settings_pages = vec![
             SettingsPage::new(main_page_handle),
-            SettingsPage::new(ai_page_handle),
+            SettingsPage::new(ai_page_handle.clone()),
             billing_and_usage_page,
             SettingsPage::new(code_page_handle),
             SettingsPage::new(teams_page_handle),
@@ -1306,62 +1405,103 @@ impl SettingsView {
 
         // Build sidebar nav items. AI page is presented as an "Agents" umbrella
         // with subpages; the actual AI SettingsPage is hidden from direct sidebar listing.
-        let mut nav_items = vec![
-            SettingsNavItem::Page(SettingsSection::Account),
-            SettingsNavItem::Umbrella(SettingsUmbrella::new(
-                "Agents",
-                SettingsSection::ai_subpages().to_vec(),
-            )),
-            SettingsNavItem::Page(SettingsSection::BillingAndUsage),
-            SettingsNavItem::Umbrella(SettingsUmbrella::new(
-                "Code",
-                vec![
-                    SettingsSection::CodeIndexing,
-                    SettingsSection::EditorAndCodeReview,
-                ],
-            )),
-            SettingsNavItem::Umbrella(SettingsUmbrella::new(
-                "Cloud platform",
-                vec![
-                    SettingsSection::CloudEnvironments,
-                    SettingsSection::OzCloudAPIKeys,
-                ],
-            )),
-            SettingsNavItem::Page(SettingsSection::Teams),
-            SettingsNavItem::Page(SettingsSection::Appearance),
-            SettingsNavItem::Page(SettingsSection::Features),
-            SettingsNavItem::Page(SettingsSection::Keybindings),
-            SettingsNavItem::Page(SettingsSection::Warpify),
-            SettingsNavItem::Page(SettingsSection::Referrals),
-            SettingsNavItem::Page(SettingsSection::SharedBlocks),
-            SettingsNavItem::Page(SettingsSection::WarpDrive),
-            SettingsNavItem::Page(SettingsSection::Privacy),
-            SettingsNavItem::Page(SettingsSection::About),
-        ];
+        let mut nav_items = if is_local_warp_cloud_ui_disabled() {
+            vec![
+                SettingsNavItem::Umbrella(SettingsUmbrella::new(
+                    "Agents",
+                    SettingsSection::ai_subpages().to_vec(),
+                )),
+                SettingsNavItem::Page(SettingsSection::MCPServers),
+                SettingsNavItem::Umbrella(SettingsUmbrella::new(
+                    "Code",
+                    vec![
+                        SettingsSection::CodeIndexing,
+                        SettingsSection::EditorAndCodeReview,
+                    ],
+                )),
+                SettingsNavItem::Page(SettingsSection::Appearance),
+                SettingsNavItem::Page(SettingsSection::Features),
+                SettingsNavItem::Page(SettingsSection::Keybindings),
+                SettingsNavItem::Page(SettingsSection::Warpify),
+                SettingsNavItem::Page(SettingsSection::About),
+            ]
+        } else {
+            vec![
+                SettingsNavItem::Page(SettingsSection::Account),
+                SettingsNavItem::Umbrella(SettingsUmbrella::new(
+                    "Agents",
+                    SettingsSection::ai_subpages().to_vec(),
+                )),
+                SettingsNavItem::Page(SettingsSection::BillingAndUsage),
+                SettingsNavItem::Umbrella(SettingsUmbrella::new(
+                    "Code",
+                    vec![
+                        SettingsSection::CodeIndexing,
+                        SettingsSection::EditorAndCodeReview,
+                    ],
+                )),
+                SettingsNavItem::Umbrella(SettingsUmbrella::new(
+                    "Cloud platform",
+                    vec![
+                        SettingsSection::CloudEnvironments,
+                        SettingsSection::OzCloudAPIKeys,
+                    ],
+                )),
+                SettingsNavItem::Page(SettingsSection::Teams),
+                SettingsNavItem::Page(SettingsSection::Appearance),
+                SettingsNavItem::Page(SettingsSection::Features),
+                SettingsNavItem::Page(SettingsSection::Keybindings),
+                SettingsNavItem::Page(SettingsSection::Warpify),
+                SettingsNavItem::Page(SettingsSection::Referrals),
+                SettingsNavItem::Page(SettingsSection::SharedBlocks),
+                SettingsNavItem::Page(SettingsSection::WarpDrive),
+                SettingsNavItem::Page(SettingsSection::Privacy),
+                SettingsNavItem::Page(SettingsSection::About),
+            ]
+        };
 
         if FeatureFlag::WarpControlCli.is_enabled() {
-            let shared_blocks_index = nav_items
+            let scripting_index = nav_items
                 .iter()
                 .position(|item| {
                     matches!(item, SettingsNavItem::Page(SettingsSection::SharedBlocks))
                 })
+                .or_else(|| {
+                    nav_items.iter().position(|item| {
+                        matches!(item, SettingsNavItem::Page(SettingsSection::Privacy))
+                    })
+                })
                 .unwrap_or(nav_items.len());
             nav_items.insert(
-                shared_blocks_index,
+                scripting_index,
                 SettingsNavItem::Page(SettingsSection::Scripting),
             );
         }
 
         // Resolve the initial page: map internal backing-page sections to their default subpage.
         let initial_page = match page {
-            Some(SettingsSection::AI) => SettingsSection::WarpAgent,
+            Some(SettingsSection::AI) => {
+                if is_local_warp_cloud_ui_disabled() {
+                    SettingsSection::ThirdPartyCLIAgents
+                } else {
+                    SettingsSection::WarpAgent
+                }
+            }
             Some(SettingsSection::Code) => SettingsSection::CodeIndexing,
             Some(SettingsSection::Scripting) if !FeatureFlag::WarpControlCli.is_enabled() => {
                 SettingsSection::Account
             }
             Some(section) if section.is_subpage() => section,
             other => other.unwrap_or_default(),
-        };
+        }
+        .local_warp_cloud_ui_fallback();
+
+        if initial_page.is_ai_subpage() && initial_page != SettingsSection::AgentMCPServers {
+            let subpage = AISubpage::from_section(initial_page);
+            ai_page_handle.update(ctx, |view, ctx| {
+                view.set_active_subpage(subpage, ctx);
+            });
+        }
 
         // Auto-expand the umbrella if the initial page is one of its subpages.
         if initial_page.is_subpage() {
@@ -1435,8 +1575,10 @@ impl SettingsView {
             .iter()
             .zip(self.pages_filter.iter())
             .filter_map(move |(page, match_data)| {
-                (self.should_render_page(page, app) && match_data.is_truthy())
-                    .then_some((page, *match_data))
+                (!page.section.hidden_backing_page_by_local_warp_cloud_ui()
+                    && self.should_render_page(page, app)
+                    && match_data.is_truthy())
+                .then_some((page, *match_data))
             })
     }
 
@@ -2001,10 +2143,17 @@ impl SettingsView {
         // Map internal backing-page sections to their default subpage.
         // External callers should use subpage variants directly.
         let section = match section {
-            SettingsSection::AI => SettingsSection::WarpAgent,
+            SettingsSection::AI => {
+                if is_local_warp_cloud_ui_disabled() {
+                    SettingsSection::ThirdPartyCLIAgents
+                } else {
+                    SettingsSection::WarpAgent
+                }
+            }
             SettingsSection::Code => SettingsSection::CodeIndexing,
             other => other,
-        };
+        }
+        .local_warp_cloud_ui_fallback();
 
         // For AI subpages, the backing page is the AI page. Check it exists.
         let page_section = section.parent_page_section();
@@ -2096,6 +2245,13 @@ impl SettingsView {
     }
 
     fn should_render_page(&self, settings_page: &SettingsPage, app: &AppContext) -> bool {
+        if settings_page
+            .section
+            .hidden_backing_page_by_local_warp_cloud_ui()
+        {
+            return false;
+        }
+
         match &settings_page.view_handle {
             SettingsPageViewHandle::Main(v) => v.as_ref(app).should_render(app),
             SettingsPageViewHandle::Teams(v) => v.as_ref(app).should_render(app),
@@ -2124,6 +2280,10 @@ impl SettingsView {
         email: Option<&String>,
         ctx: &mut ViewContext<Self>,
     ) {
+        if is_local_warp_cloud_ui_disabled() {
+            return;
+        }
+
         if let Some(team_page) = self.settings_page(SettingsSection::Teams) {
             if let SettingsPageViewHandle::Teams(view) = &team_page.view_handle {
                 view.update(ctx, |view, ctx| {
@@ -2141,8 +2301,12 @@ impl SettingsView {
         autoinstall_gallery_title: Option<&str>,
         ctx: &mut ViewContext<Self>,
     ) {
-        // Navigate to the AgentMCPServers subpage (under the Agents umbrella).
-        self.set_and_refresh_current_page(SettingsSection::AgentMCPServers, ctx);
+        let section = if is_local_warp_cloud_ui_disabled() {
+            SettingsSection::MCPServers
+        } else {
+            SettingsSection::AgentMCPServers
+        };
+        self.set_and_refresh_current_page(section, ctx);
         if let Some(mcp_page) = self.settings_page(SettingsSection::MCPServers) {
             if let SettingsPageViewHandle::MCPServers(view) = &mcp_page.view_handle {
                 view.update(ctx, |view, ctx| {

@@ -1099,11 +1099,11 @@ fn test_orchestration_modal_form_configuration_renders_footer_actions_without_te
                 .debug_text_content()
                 .unwrap_or_default();
             assert!(
-                submit_text.contains("Create environment"),
+                submit_text.contains("建立環境"),
                 "Expected footer submit label in rendered content: {submit_text}"
             );
             assert!(
-                cancel_text.contains("Cancel"),
+                cancel_text.contains("取消"),
                 "Expected footer cancel action in rendered content: {cancel_text}"
             );
 
@@ -1113,11 +1113,11 @@ fn test_orchestration_modal_form_configuration_renders_footer_actions_without_te
                 .debug_text_content()
                 .unwrap_or_default();
             assert!(
-                !text_content.contains("Share with team"),
+                !text_content.contains("與團隊分享"),
                 "Did not expect team-sharing controls in orchestration modal form: {text_content}"
             );
             assert!(
-                !text_content.contains("0 / 240 characters"),
+                !text_content.contains("0 / 240 個字元"),
                 "Did not expect settings character count in orchestration modal form: {text_content}"
             );
             assert!(

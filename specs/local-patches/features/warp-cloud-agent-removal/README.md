@@ -5,7 +5,7 @@
 此本地 patch 會從個人 fork 移除或隱藏 Warp account、Warp cloud、billing、
 teams、referrals、官方 Warp Agent，以及 Warp-managed cloud agent 相關介面。
 
-目標不是立即刪除所有底層 model。第一階段應先強力隱藏使用者可見入口，同時維持
+目標不是立即刪除所有底層 model。第一階段先強力隱藏使用者可見入口，同時維持
 build 穩定性，並讓未來更新官方 stable 時更容易 rebase。
 
 ## 使用者可見行為
@@ -27,7 +27,6 @@ build 穩定性，並讓未來更新官方 stable 時更容易 rebase。
   - `AgentProfiles`
   - `Knowledge`
 - Privacy 內的 cloud / official service controls。
-- Features 內的 Agent / Warp AI 專用 controls。
 
 保留：
 
@@ -38,6 +37,7 @@ build 穩定性，並讓未來更新官方 stable 時更容易 rebase。
 - Warpify。
 - About。
 - 非 agent 的 terminal features。
+- Features 頁面目前恢復 upstream controls，不做額外 local-only 隱藏。
 - Privacy 內的 `SecretRedactionWidget`。
 
 ## Patch 策略
@@ -46,6 +46,8 @@ build 穩定性，並讓未來更新官方 stable 時更容易 rebase。
 - 第一階段保留底層 data models 與 persisted settings schemas。
 - 新增集中 helper，例如 `is_local_warp_cloud_ui_disabled()`，所有 local-only
   隱藏行為都經由此 helper。
+- 後續 gate 集中到 `app/src/local_patches.rs`，讓 Settings、Privacy 與 telemetry
+  enforcement 共用同一個 local patch switch。
 - 避免散落 magic `cfg` checks 或不相關 feature flags。
 - 在 helper 或 local-only gate 附近加上簡短
   `LOCAL-PATCH(warp-cloud-agent-removal)` 註解，讓未來 rebase 可快速找到 patch。
@@ -53,18 +55,37 @@ build 穩定性，並讓未來更新官方 stable 時更容易 rebase。
 ## 主要實作區域
 
 - `app/src/settings_view/mod.rs`
+  - `is_local_warp_cloud_ui_disabled()`，目前 re-export
+    `local_patches::is_warp_cloud_agent_removal_enabled`
   - `SettingsView::new`
   - `SettingsSection::ai_subpages()`
   - hidden / deep-linked pages 的 navigation fallback
-- `app/src/settings_view/main_page.rs`
-  - Account page widgets
+- `app/src/local_patches.rs`
+  - `is_warp_cloud_agent_removal_enabled()`
+  - `coerce_official_warp_privacy_setting()`
+- `app/src/settings/privacy.rs`
+  - official Warp telemetry、crash reporting、cloud conversation storage 預設與 runtime
+    狀態強制為 disabled
+- `app/src/ai/blocklist/telemetry_banner.rs`
+  - local 模式下停用 AI UGC telemetry collection
 - `app/src/settings_view/ai_page.rs`
   - `AISettingsPageView::build_page`
   - 保留 `CLIAgentWidget`
 - `app/src/settings_view/privacy_page.rs`
   - 移除 cloud/account/telemetry widgets，同時保留有用的 local privacy controls
 - `app/src/settings_view/features_page.rs`
-  - 隱藏 agent / Warp AI-specific controls
+  - 恢復 upstream controls，不做額外 local-only 隱藏
+- `app/src/workspace/mod.rs`
+  - command palette / editable bindings 維持 upstream 行為；hidden page 是否可渲染交由
+    settings page-level fallback 控制
+- `app/src/uri/mod.rs`
+  - settings deeplink 維持 upstream 行為；hidden page 是否可渲染交由 settings
+    page-level fallback 控制
+- `app/src/local_control/handlers/app_state.rs`
+  - `surface.settings.open` 維持 upstream 行為，仍保留 upstream 原本對 `WarpDrive`
+    的限制
+- `app/src/settings_view/mod_tests.rs`
+  - local sidebar / search / fallback 行為測試
 - 候選的整頁 settings：
   - `billing_and_usage_page.rs`
   - `billing_and_usage_page_v2.rs`
@@ -74,6 +95,9 @@ build 穩定性，並讓未來更新官方 stable 時更容易 rebase。
   - `warp_drive_page.rs`
   - `environments_page.rs`
   - `platform_page.rs`
+
+第一階段採用 navigation 與 page-level filtering；上述整頁檔案仍保留，避免物理刪除造成
+官方 stable 更新時的大量衝突。
 
 ## Build 與測試
 
@@ -87,8 +111,11 @@ cargo check -p warp --bin warp-oss --features release_bundle,gui --target x86_64
 
 - App 可啟動。
 - Settings sidebar 不再顯示 Warp login/account、billing、teams、referrals、
-  shared blocks、Warp Drive、cloud platform 或官方 Warp Agent pages。
-- Search、command palette 與 deeplinks 不能導向 hidden pages。
+  shared blocks、Warp Drive、Privacy、cloud platform 或官方 Warp Agent pages。
+- Official telemetry、crash reporting、cloud conversation storage 與 AI UGC telemetry
+  維持 disabled。
+- Search 與 sidebar/direct navigation 不顯示 hidden pages；command palette、
+  deeplinks、local-control 不再做額外 local-only 封鎖。
 - Third-party CLI agents settings page 仍可進入。
 - Third-party CLI agent toolbar settings 仍可設定。
 - MCP Servers settings 仍可進入。
