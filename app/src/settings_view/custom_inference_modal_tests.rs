@@ -11,11 +11,11 @@ fn validate_url_accepts_https_with_host() {
 fn validate_url_rejects_http() {
     assert_eq!(
         validate_url("http://api.example.com/v1"),
-        Err("URL must use HTTPS")
+        Err("URL 必須使用 HTTPS")
     );
     assert_eq!(
         validate_url("http://example.com"),
-        Err("URL must use HTTPS")
+        Err("URL 必須使用 HTTPS")
     );
 }
 
@@ -23,27 +23,27 @@ fn validate_url_rejects_http() {
 fn validate_url_rejects_ftp_and_other_schemes() {
     assert_eq!(
         validate_url("ftp://files.example.com"),
-        Err("URL must use HTTPS")
+        Err("URL 必須使用 HTTPS")
     );
     assert_eq!(
         validate_url("file:///etc/passwd"),
-        Err("URL must use HTTPS")
+        Err("URL 必須使用 HTTPS")
     );
     assert_eq!(
         validate_url("ws://socket.example.com"),
-        Err("URL must use HTTPS")
+        Err("URL 必須使用 HTTPS")
     );
 }
 
 #[test]
 fn validate_url_rejects_malformed_strings() {
-    assert_eq!(validate_url("not a url"), Err("Invalid URL"));
-    assert_eq!(validate_url("https://"), Err("Invalid URL"));
+    assert_eq!(validate_url("not a url"), Err("URL 無效"));
+    assert_eq!(validate_url("https://"), Err("URL 無效"));
 }
 
 #[test]
 fn validate_url_rejects_empty_host() {
-    assert_eq!(validate_url("https://?query=1"), Err("Invalid URL"));
+    assert_eq!(validate_url("https://?query=1"), Err("URL 無效"));
 }
 
 #[test]
@@ -58,7 +58,7 @@ fn validate_url_allows_whitespace_only() {
 
 #[test]
 fn validate_url_rejects_localhost_and_private_ips() {
-    let error = Err("URL must not use a local or private host");
+    let error = Err("URL 不可使用本機或 private host");
     assert_eq!(validate_url("https://localhost:8080"), error);
     assert_eq!(validate_url("https://127.0.0.1/v1"), error);
     assert_eq!(validate_url("https://0.0.0.0/v1"), error);

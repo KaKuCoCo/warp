@@ -236,28 +236,22 @@ fn match_data_countable_zero_is_not_truthy() {
 #[test]
 fn subpage_display_names_are_correct() {
     assert_eq!(SettingsSection::WarpAgent.to_string(), "Warp Agent");
-    assert_eq!(SettingsSection::AgentProfiles.to_string(), "Profiles");
-    assert_eq!(SettingsSection::AgentMCPServers.to_string(), "MCP servers");
-    assert_eq!(SettingsSection::Knowledge.to_string(), "Knowledge");
+    assert_eq!(SettingsSection::AgentProfiles.to_string(), "設定檔");
+    assert_eq!(SettingsSection::AgentMCPServers.to_string(), "MCP 伺服器");
+    assert_eq!(SettingsSection::Knowledge.to_string(), "知識");
     assert_eq!(
         SettingsSection::ThirdPartyCLIAgents.to_string(),
-        "Third party CLI agents"
+        "第三方 CLI Agent"
     );
-    assert_eq!(
-        SettingsSection::CodeIndexing.to_string(),
-        "Indexing and projects"
-    );
+    assert_eq!(SettingsSection::CodeIndexing.to_string(), "索引與專案");
     assert_eq!(
         SettingsSection::EditorAndCodeReview.to_string(),
-        "Editor and Code Review"
+        "編輯器與程式碼審查"
     );
-    assert_eq!(
-        SettingsSection::CloudEnvironments.to_string(),
-        "Environments"
-    );
+    assert_eq!(SettingsSection::CloudEnvironments.to_string(), "環境");
     assert_eq!(
         SettingsSection::OzCloudAPIKeys.to_string(),
-        "Oz Cloud API Keys"
+        "Oz Cloud API 金鑰"
     );
 }
 

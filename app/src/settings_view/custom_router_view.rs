@@ -48,7 +48,7 @@ impl CustomRouterView {
     pub fn new(router: CustomModelRouter, ctx: &mut ViewContext<Self>) -> Self {
         let is_any_ai_enabled = AISettings::as_ref(ctx).is_any_ai_enabled(ctx);
         let open_file_button = ctx.add_typed_action_view(|_ctx| {
-            ActionButton::new("Open file", SecondaryTheme)
+            ActionButton::new("開啟檔案", SecondaryTheme)
                 .with_icon(Icon::File)
                 .with_size(ButtonSize::Small)
                 .with_height(HEADER_BUTTON_HEIGHT)
@@ -61,7 +61,7 @@ impl CustomRouterView {
         });
 
         let edit_button = ctx.add_typed_action_view(|_ctx| {
-            ActionButton::new("Edit", SecondaryTheme)
+            ActionButton::new("編輯", SecondaryTheme)
                 .with_icon(Icon::Pencil)
                 .with_size(ButtonSize::Small)
                 .with_height(HEADER_BUTTON_HEIGHT)
@@ -74,7 +74,7 @@ impl CustomRouterView {
         });
 
         let delete_button = ctx.add_typed_action_view(|_ctx| {
-            ActionButton::new("Delete", DangerSecondaryTheme)
+            ActionButton::new("刪除", DangerSecondaryTheme)
                 .with_icon(Icon::Trash)
                 .with_size(ButtonSize::Small)
                 .with_height(HEADER_BUTTON_HEIGHT)
@@ -178,8 +178,8 @@ impl View for CustomRouterView {
 
         // Type label row
         let type_label = match &self.router.routing {
-            CustomModelRouting::Complexity(_) => "Complexity-based routing",
-            CustomModelRouting::Prompt(_) => "Prompt-based routing",
+            CustomModelRouting::Complexity(_) => "依複雜度路由",
+            CustomModelRouting::Prompt(_) => "依 prompt 路由",
         };
         let type_row = Flex::row()
             .with_cross_axis_alignment(CrossAxisAlignment::Center)
@@ -257,7 +257,7 @@ fn render_targets_row(
     match routing {
         CustomModelRouting::Complexity(c) => {
             flex.add_child(render_model_line(
-                "Default:",
+                "預設：",
                 model_display_name(&c.default, app),
                 appearance,
                 sub_color,
@@ -265,7 +265,7 @@ fn render_targets_row(
             if let Some(easy) = &c.easy {
                 flex.add_child(
                     Container::new(render_model_line(
-                        "Easy:",
+                        "簡單：",
                         model_display_name(easy, app),
                         appearance,
                         sub_color,
@@ -277,7 +277,7 @@ fn render_targets_row(
             if let Some(medium) = &c.medium {
                 flex.add_child(
                     Container::new(render_model_line(
-                        "Medium:",
+                        "中等：",
                         model_display_name(medium, app),
                         appearance,
                         sub_color,
@@ -289,7 +289,7 @@ fn render_targets_row(
             if let Some(hard) = &c.hard {
                 flex.add_child(
                     Container::new(render_model_line(
-                        "Hard:",
+                        "困難：",
                         model_display_name(hard, app),
                         appearance,
                         sub_color,
@@ -301,7 +301,7 @@ fn render_targets_row(
         }
         CustomModelRouting::Prompt(p) => {
             flex.add_child(render_model_line(
-                "Default:",
+                "預設：",
                 model_display_name(&p.default_model, app),
                 appearance,
                 sub_color,
@@ -309,9 +309,9 @@ fn render_targets_row(
             let rule_count = p.rules.len();
             if rule_count > 0 {
                 let label = if rule_count == 1 {
-                    "1 rule".to_string()
+                    "1 條規則".to_string()
                 } else {
-                    format!("{rule_count} rules")
+                    format!("{rule_count} 條規則")
                 };
                 flex.add_child(
                     Container::new(

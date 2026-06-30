@@ -1061,7 +1061,7 @@ impl AISettingsPageView {
         let cli_agent_footer_command_editor = ctx.add_typed_action_view(|ctx| {
             let mut input =
                 SubmittableTextInput::new(ctx).validate_on_edit(|s| Regex::new(s).is_ok());
-            input.set_placeholder_text("command (supports regex)", ctx);
+            input.set_placeholder_text("命令（支援 regex）", ctx);
             input
         });
         // The coding agent footer command editor is always enabled,
@@ -1709,7 +1709,7 @@ impl AISettingsPageView {
         let router_views = Self::create_router_views(ctx);
         #[cfg(feature = "local_fs")]
         let add_router_button = ctx.add_typed_action_view(|_| {
-            ActionButton::new("+ Add router", SecondaryTheme)
+            ActionButton::new("+ 新增 router", SecondaryTheme)
                 .with_size(ButtonSize::Small)
                 .on_click(|ctx| {
                     ctx.dispatch_typed_action(AISettingsPageAction::OpenAddCustomRouter);
@@ -1725,7 +1725,7 @@ impl AISettingsPageView {
         }
 
         let add_profile_button = ctx.add_typed_action_view(|_| {
-            ActionButton::new("Add Profile", SecondaryTheme)
+            ActionButton::new("新增設定檔", SecondaryTheme)
                 .with_icon(Icon::Plus)
                 .with_size(ButtonSize::Small)
                 .on_click(|ctx| {
@@ -1741,7 +1741,7 @@ impl AISettingsPageView {
         let custom_inference_controls_enabled =
             is_any_ai_enabled && UserWorkspaces::as_ref(ctx).is_custom_inference_enabled(ctx);
         let custom_inference_add_button = ctx.add_typed_action_view(|_| {
-            ActionButton::new("+ Add custom model", SecondaryTheme)
+            ActionButton::new("+ 新增自訂模型", SecondaryTheme)
                 .with_size(ButtonSize::Small)
                 .on_click(|ctx| {
                     ctx.dispatch_typed_action(AISettingsPageAction::OpenAddCustomEndpointModal);
@@ -1759,7 +1759,7 @@ impl AISettingsPageView {
 
         let custom_endpoint_modal_view = ctx.add_typed_action_view(|ctx| {
             Modal::new(
-                Some("Add custom endpoint".to_string()),
+                Some("新增自訂 endpoint".to_string()),
                 custom_endpoint_modal_body.clone(),
                 ctx,
             )
@@ -1805,7 +1805,7 @@ impl AISettingsPageView {
         });
         let set_default_model_modal_view = ctx.add_typed_action_view(|ctx| {
             Modal::new(
-                Some("Change your default model?".to_string()),
+                Some("變更預設模型？".to_string()),
                 set_default_model_modal_body.clone(),
                 ctx,
             )
@@ -1863,11 +1863,11 @@ impl AISettingsPageView {
 
             let items = vec![
                 DropdownItem::new(
-                    "New Tab",
+                    "新分頁",
                     AISettingsPageAction::SetConversationLayout(OpenConversationPreference::NewTab),
                 ),
                 DropdownItem::new(
-                    "Split Pane",
+                    "分割窗格",
                     AISettingsPageAction::SetConversationLayout(
                         OpenConversationPreference::SplitPane,
                     ),
@@ -1878,9 +1878,9 @@ impl AISettingsPageView {
             let current = *crate::util::file::external_editor::EditorSettings::as_ref(ctx)
                 .open_conversation_layout_preference;
             match current {
-                OpenConversationPreference::NewTab => dropdown.set_selected_by_name("New Tab", ctx),
+                OpenConversationPreference::NewTab => dropdown.set_selected_by_name("新分頁", ctx),
                 OpenConversationPreference::SplitPane => {
-                    dropdown.set_selected_by_name("Split Pane", ctx)
+                    dropdown.set_selected_by_name("分割窗格", ctx)
                 }
             };
             dropdown
@@ -2039,7 +2039,7 @@ impl AISettingsPageView {
                 let window_id = ctx.window_id();
                 crate::ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
                     let toast = crate::view_components::DismissibleToast::success(
-                        "Default model updated".to_string(),
+                        "預設模型已更新".to_string(),
                     );
                     toast_stack.add_ephemeral_toast(toast, window_id, ctx);
                 });
@@ -2183,9 +2183,7 @@ impl AISettingsPageView {
         let provider_name = provider.display_name();
         let current_default = Self::active_base_model_display_name(ctx);
         let description = format!(
-            "You added your own {provider_name} API key, but your default model is currently set \
-             to {current_default}, which won't work without Warp credits. Would you like to change \
-             your default model?"
+            "你已新增自己的 {provider_name} API key，但目前預設模型設為 {current_default}，沒有 Warp credits 時無法使用。要變更預設模型嗎？"
         );
         self.show_set_default_model_modal(description, choices, ctx);
     }
@@ -2229,9 +2227,7 @@ impl AISettingsPageView {
         }
         let current_default = Self::active_base_model_display_name(ctx);
         let description = format!(
-            "You added the \"{}\" custom endpoint, but your default model is currently set to \
-             {current_default}, which won't work without Warp credits. Would you like to change \
-             your default model?",
+            "你已新增「{}」自訂 endpoint，但目前預設模型設為 {current_default}，沒有 Warp credits 時無法使用。要變更預設模型嗎？",
             endpoint.name
         );
         self.show_set_default_model_modal(description, choices, ctx);
@@ -2265,7 +2261,7 @@ impl AISettingsPageView {
         (0..count)
             .map(|index| {
                 let button = ctx.add_typed_action_view(move |_| {
-                    ActionButton::new("Edit", SecondaryTheme)
+                    ActionButton::new("編輯", SecondaryTheme)
                         .with_icon(Icon::Pencil)
                         .with_size(ButtonSize::Small)
                         .on_click(move |ctx| {
@@ -2298,7 +2294,7 @@ impl AISettingsPageView {
         self.pending_remove_custom_endpoint_index = None;
 
         self.custom_endpoint_modal_state
-            .set_title(Some("Add custom endpoint".to_string()), ctx);
+            .set_title(Some("新增自訂 endpoint".to_string()), ctx);
         self.custom_endpoint_modal_state.prefill(None, None, ctx);
         self.custom_endpoint_modal_state.open(ctx);
         ctx.emit(AISettingsPageEvent::ShowModal);
@@ -2325,7 +2321,7 @@ impl AISettingsPageView {
         self.pending_remove_custom_endpoint_index = None;
 
         self.custom_endpoint_modal_state
-            .set_title(Some("Edit custom endpoint".to_string()), ctx);
+            .set_title(Some("編輯自訂 endpoint".to_string()), ctx);
         self.custom_endpoint_modal_state
             .prefill(endpoint.as_ref(), Some(index), ctx);
         self.custom_endpoint_modal_state.open(ctx);
@@ -2384,7 +2380,7 @@ impl AISettingsPageView {
                 let window_id = ctx.window_id();
                 crate::ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
                     let toast = crate::view_components::DismissibleToast::success(
-                        "Endpoint added".to_string(),
+                        "Endpoint 已新增".to_string(),
                     );
                     toast_stack.add_ephemeral_toast(toast, window_id, ctx);
                 });
@@ -2424,7 +2420,7 @@ impl AISettingsPageView {
                 let window_id = ctx.window_id();
                 crate::ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
                     let toast = crate::view_components::DismissibleToast::success(
-                        "Endpoint saved".to_string(),
+                        "Endpoint 已儲存".to_string(),
                     );
                     toast_stack.add_ephemeral_toast(toast, window_id, ctx);
                 });
@@ -2511,7 +2507,7 @@ impl AISettingsPageView {
                 let window_id = ctx.window_id();
                 crate::ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
                     let toast = crate::view_components::DismissibleToast::success(
-                        "Endpoint removed".to_string(),
+                        "Endpoint 已移除".to_string(),
                     );
                     toast_stack.add_ephemeral_toast(toast, window_id, ctx);
                 });
@@ -3505,7 +3501,7 @@ impl AISettingsPageView {
                     }
 
                     items.push(
-                        MenuItemFields::new("Other")
+                        MenuItemFields::new("其他")
                             .with_on_select_action(DropdownAction::select_action_and_close(
                                 AISettingsPageAction::SetCLIAgentForCommand {
                                     pattern: pattern_clone.clone(),
@@ -3518,15 +3514,15 @@ impl AISettingsPageView {
                     dropdown.set_rich_items(items, ctx);
 
                     dropdown.set_menu_header_text_override(|label| {
-                        if label == "Other" {
-                            "Select coding agent".to_string()
+                        if label == "其他" {
+                            "選取 coding agent".to_string()
                         } else {
                             label.to_string()
                         }
                     });
 
                     let selected_name = if matches!(current_agent, CLIAgent::Unknown) {
-                        "Other"
+                        "其他"
                     } else {
                         current_agent.display_name()
                     };
@@ -7420,7 +7416,7 @@ impl SettingsWidget for CLIAgentWidget {
         // global AI toggle, because these settings control third-party coding
         // agents (Claude Code, Codex, Gemini CLI) rather than Warp's own AI.
         let cli_agent_footer_toggle = render_ai_setting_toggle::<ShouldRenderCLIAgentToolbar>(
-            "Show coding agent toolbar",
+            "顯示 coding agent 工具列",
             AISettingsPageAction::ToggleCLIAgentToolbar,
             *ai_settings.should_render_cli_agent_footer,
             true,
@@ -7430,15 +7426,13 @@ impl SettingsWidget for CLIAgentWidget {
         );
 
         let description_fragments = vec![
-            FormattedTextFragment::plain_text(
-                "Show a toolbar with quick actions when running coding agents like ",
-            ),
+            FormattedTextFragment::plain_text("執行 "),
             FormattedTextFragment::inline_code("claude"),
             FormattedTextFragment::plain_text(", "),
             FormattedTextFragment::inline_code("codex"),
-            FormattedTextFragment::plain_text(", or "),
+            FormattedTextFragment::plain_text(" 或 "),
             FormattedTextFragment::inline_code("gemini"),
-            FormattedTextFragment::plain_text("."),
+            FormattedTextFragment::plain_text(" 等 coding agents 時，顯示含快速操作的工具列。"),
         ];
 
         let description = FormattedTextElement::new(
@@ -7456,7 +7450,7 @@ impl SettingsWidget for CLIAgentWidget {
             .with_child(
                 build_sub_header(
                     appearance,
-                    "Third party CLI agents",
+                    "第三方 CLI Agent",
                     Some(styles::header_font_color(true, app)),
                 )
                 .with_padding_bottom(HEADER_PADDING)
@@ -7481,14 +7475,14 @@ impl SettingsWidget for CLIAgentWidget {
             if FeatureFlag::CLIAgentRichInput.is_enabled() {
                 // Setting 1: Auto show/hide rich input based on agent status
                 let auto_show_toggle_label = render_body_item_label::<AISettingsPageAction>(
-                    "Auto show/hide Rich Input based on agent status".into(),
+                    "依 Agent 狀態自動顯示/隱藏 Rich Input".into(),
                     Some(styles::header_font_color(true, app)),
                     Some(AdditionalInfo {
                         mouse_state: self.auto_toggle_rich_input_info_tooltip.clone(),
                         on_click_action: None,
                         secondary_text: None,
                         tooltip_override_text: Some(
-                            "Requires the Warp plugin for your coding agent".to_owned(),
+                            "需要你的 coding agent 安裝 Warp plugin".to_owned(),
                         ),
                     }),
                     LocalOnlyIconState::for_setting(
@@ -7515,7 +7509,7 @@ impl SettingsWidget for CLIAgentWidget {
 
                 column.add_child(
                     render_ai_setting_toggle::<AutoOpenRichInputOnCLIAgentStart>(
-                        "Auto open Rich Input when a coding agent session starts",
+                        "coding agent session 開始時自動開啟 Rich Input",
                         AISettingsPageAction::ToggleAutoOpenRichInputOnCLIAgentStart,
                         *ai_settings.auto_open_rich_input_on_cli_agent_start,
                         true,
@@ -7527,7 +7521,7 @@ impl SettingsWidget for CLIAgentWidget {
 
                 // Setting 2: Auto dismiss rich input after prompt submission
                 column.add_child(render_ai_setting_toggle::<AutoDismissRichInputAfterSubmit>(
-                    "Auto dismiss Rich Input after prompt submission",
+                    "送出 prompt 後自動關閉 Rich Input",
                     AISettingsPageAction::ToggleAutoDismissRichInputAfterSubmit,
                     *ai_settings.auto_dismiss_rich_input_after_submit,
                     true,
@@ -7538,7 +7532,7 @@ impl SettingsWidget for CLIAgentWidget {
 
                 // Setting 3: Submit Rich Input with Ctrl+Enter
                 column.add_child(render_ai_setting_toggle::<SubmitRichInputOnCtrlEnter>(
-                    "Submit Rich Input with Ctrl+Enter",
+                    "使用 Ctrl+Enter 送出 Rich Input",
                     AISettingsPageAction::ToggleSubmitRichInputOnCtrlEnter,
                     *ai_settings.submit_on_ctrl_enter,
                     true,
@@ -7554,7 +7548,7 @@ impl SettingsWidget for CLIAgentWidget {
                 list_column.add_child(
                     appearance
                         .ui_builder()
-                        .span("Commands that enable the toolbar".to_string())
+                        .span("啟用工具列的命令".to_string())
                         .with_style(UiComponentStyles {
                             font_size: Some(CONTENT_FONT_SIZE),
                             ..Default::default()
@@ -7645,9 +7639,7 @@ impl SettingsWidget for CLIAgentWidget {
             };
             let command_list_description = appearance
                 .ui_builder()
-                .paragraph(
-                    "Add regex patterns to show the coding agent toolbar for matching commands.",
-                )
+                .paragraph("新增 regex 模式，讓相符命令顯示 coding agent 工具列。")
                 .with_style(UiComponentStyles {
                     font_size: Some(appearance.ui_font_size()),
                     font_color: Some(styles::description_font_color(true, app).into()),

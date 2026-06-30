@@ -109,7 +109,7 @@ impl CustomEndpointModal {
                 ..Default::default()
             };
             let mut editor = EditorView::single_line(options, ctx);
-            editor.set_placeholder_text("e.g., Zach's external models", ctx);
+            editor.set_placeholder_text("例如：外部模型", ctx);
             if let Some(ep) = endpoint {
                 editor.set_buffer_text(&ep.name, ctx);
             }
@@ -129,7 +129,7 @@ impl CustomEndpointModal {
                 ..Default::default()
             };
             let mut editor = EditorView::single_line(options, ctx);
-            editor.set_placeholder_text("Please include 'https://'", ctx);
+            editor.set_placeholder_text("請包含 'https://'", ctx);
             if let Some(ep) = endpoint {
                 editor.set_buffer_text(&ep.url, ctx);
             }
@@ -204,7 +204,7 @@ impl CustomEndpointModal {
             });
         }
         let remove_endpoint_button = ctx.add_typed_action_view(|_| {
-            ActionButton::new("Remove", DangerSecondaryTheme)
+            ActionButton::new("移除", DangerSecondaryTheme)
                 .with_icon(Icon::Trash)
                 .on_click(|ctx| {
                     ctx.dispatch_typed_action(CustomEndpointModalAction::RemoveEndpoint);
@@ -647,7 +647,7 @@ impl View for CustomEndpointModal {
         column.add_child(
             Container::new(
                 Text::new(
-                    "Provide your endpoint details below. You can add as many models from the endpoint as you'd like and can also provide aliases for the model picker in your input.",
+                    "在下方提供 endpoint 詳細資料。你可以從這個 endpoint 新增任意數量的模型，也可以為輸入欄中的模型選擇器提供 alias。",
                     appearance.ui_font_family(),
                     LABEL_FONT_SIZE,
                 )
@@ -661,7 +661,7 @@ impl View for CustomEndpointModal {
 
         // Endpoint name
         column.add_child(
-            Container::new(label("Endpoint name"))
+            Container::new(label("Endpoint 名稱"))
                 .with_margin_bottom(4.)
                 .finish(),
         );
@@ -730,12 +730,12 @@ impl View for CustomEndpointModal {
             .with_cross_axis_alignment(CrossAxisAlignment::Center)
             .with_spacing(MODEL_ROW_SPACING)
             .with_child(
-                ConstrainedBox::new(label("Model name"))
+                ConstrainedBox::new(label("模型名稱"))
                     .with_width(MODEL_INPUT_WIDTH)
                     .finish(),
             )
             .with_child(
-                ConstrainedBox::new(label("Model alias (optional)"))
+                ConstrainedBox::new(label("模型 alias（選填）"))
                     .with_width(MODEL_INPUT_WIDTH)
                     .finish(),
             );
@@ -814,7 +814,7 @@ impl View for CustomEndpointModal {
                         ButtonVariant::Secondary,
                         self.add_model_button_mouse_state.clone(),
                     )
-                    .with_text_label("+ Add model".to_string())
+                    .with_text_label("+ 新增模型".to_string())
                     .with_style(UiComponentStyles {
                         font_size: Some(14.),
                         padding: Some(Coords::uniform(6.).left(8.).right(8.)),
@@ -849,7 +849,7 @@ impl View for CustomEndpointModal {
                     ButtonVariant::Secondary,
                     self.cancel_button_mouse_state.clone(),
                 )
-                .with_text_label("Cancel".to_string())
+                .with_text_label("取消".to_string())
                 .with_style(button_style)
                 .build()
                 .on_click(move |ctx, _, _| {
@@ -862,9 +862,9 @@ impl View for CustomEndpointModal {
             .ui_builder()
             .button(ButtonVariant::Accent, self.save_button_mouse_state.clone())
             .with_text_label(if is_editing {
-                "Save".to_string()
+                "儲存".to_string()
             } else {
-                "Add endpoint".to_string()
+                "新增 endpoint".to_string()
             })
             .with_style(button_style);
         if !is_valid {
@@ -894,15 +894,15 @@ fn validate_url(url: &str) -> Result<(), &'static str> {
     if url.trim().is_empty() {
         return Ok(());
     }
-    let parsed = Url::parse(url).map_err(|_| "Invalid URL")?;
+    let parsed = Url::parse(url).map_err(|_| "URL 無效")?;
     if parsed.scheme() != "https" {
-        return Err("URL must use HTTPS");
+        return Err("URL 必須使用 HTTPS");
     }
     let Some(host) = parsed.host_str().filter(|h| !h.is_empty()) else {
-        return Err("URL must include a host");
+        return Err("URL 必須包含 host");
     };
     if is_restricted_host(host) {
-        return Err("URL must not use a local or private host");
+        return Err("URL 不可使用本機或 private host");
     }
     Ok(())
 }

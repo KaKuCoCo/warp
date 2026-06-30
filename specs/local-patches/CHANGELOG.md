@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+- 新增 `settings-zh-tw` local patch：
+  - 將可見 Settings 內容翻譯為繁體中文，左側 Settings navigation 保持英文。
+  - 以 `localize_settings_text` / `settings_zh_tw_text` 集中處理通用 Settings 元件字串。
+  - Windows UI font 優先使用 `Microsoft JhengHei UI`，避免繁中文字顯示為 missing-glyph 方塊。
 - 在 `local/feature/warp-cloud-agent-removal` 第一階段實作 settings 強隱藏：
   - sidebar 移除 Account、Billing、Teams、Referrals、Shared Blocks、Warp Drive、
     Cloud platform 與官方 Warp Agent 子頁。
