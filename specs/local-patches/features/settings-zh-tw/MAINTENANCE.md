@@ -3,7 +3,7 @@
 ## 重套步驟
 
 1. 確認已先套用 `warp-cloud-agent-removal`，讓 Settings 可見範圍固定。
-2. 套用 `app/src/appearance.rs` 的 Windows UI font 優先順序修補。
+2. 套用 `app/src/appearance.rs` 的 Windows UI font fallback 修補，保留 `Segoe UI` 為主要 UI 字體並預載 CJK fallback。
 3. 套用 `app/src/settings_view/settings_page.rs` 的集中翻譯 helper。
 4. 套用各 Settings page 的直接字串翻譯。
 5. 保持 `SettingsSection::sidebar_label()` 的英文 navigation label，不要把左側 menu 改回繁中。
@@ -18,7 +18,7 @@ rg -n "\"[A-Za-z][^\"]*\"" app/src/settings_view
 ## 衝突熱點
 
 - `app/src/appearance.rs`
-  - Upstream 可能調整 Windows UI font 載入邏輯。保留 `Microsoft JhengHei UI` 優先，`Segoe UI` fallback。
+  - Upstream 可能調整 Windows UI font 載入邏輯。保留 `Segoe UI` 作為主要 UI 字體，並預載 `Microsoft JhengHei UI` / `Microsoft JhengHei`，避免繁中 Settings 變成 missing-glyph 方塊，也避免英文對話框套用 CJK 字體。
 - `app/src/settings_view/settings_page.rs`
   - 通用 Settings 元件 render helper 常被 upstream 調整；衝突時優先維持翻譯集中入口。
 - `app/src/settings_view/mod.rs`
