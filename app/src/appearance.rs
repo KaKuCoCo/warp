@@ -330,12 +330,24 @@ fn load_default_ui_font_family(ctx: &mut AppContext) -> anyhow::Result<FamilyId>
             ],
         );
 
-        // LOCAL-PATCH(settings-zh-tw): Prefer a CJK-capable Windows UI font so translated
-        // Settings text does not render as missing-glyph boxes. If it is unavailable, keep the
-        // upstream Segoe UI fallback before falling back to bundled Roboto.
+        // LOCAL-PATCH(settings-zh-tw): Keep Segoe UI as the primary Windows UI font so English
+        // dialogs retain upstream styling, but preload CJK-capable Windows UI fonts so translated
+        // Settings text can shape with system fallback glyphs instead of missing-glyph boxes.
         #[cfg(windows)]
-        for font_family in ["Microsoft JhengHei UI", "Microsoft JhengHei", "Segoe UI"] {
-            if let Ok(font_family_id) = font_cache.load_system_font(font_family) {
+        {
+            let mut cjk_font_family = None;
+            for font_family in ["Microsoft JhengHei UI", "Microsoft JhengHei"] {
+                if let Ok(font_family_id) = font_cache.get_or_load_system_font(font_family) {
+                    cjk_font_family = Some(font_family_id);
+                    break;
+                }
+            }
+
+            if let Ok(font_family_id) = font_cache.get_or_load_system_font("Segoe UI") {
+                return Ok(font_family_id);
+            }
+
+            if let Some(font_family_id) = cjk_font_family {
                 return Ok(font_family_id);
             }
         }

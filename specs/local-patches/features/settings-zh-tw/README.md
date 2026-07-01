@@ -13,7 +13,7 @@
 
 - Settings 可見頁面的標題、說明文字、欄位 label、按鈕、提示、錯誤與確認對話框。
 - `settings_page.rs` 中以 `localize_settings_text` 集中處理的通用 Settings 元件字串。
-- Windows UI font fallback 修補，優先使用 `Microsoft JhengHei UI` 顯示繁中文字。
+- Windows UI font fallback 修補：Windows 上保留 `Segoe UI` 作為主要 UI 字體，並預載 `Microsoft JhengHei UI` / `Microsoft JhengHei` 供繁中文字 fallback。
 
 不包含：
 
@@ -65,6 +65,6 @@ rebase 到新版官方 stable tag 時：
 1. 先套用 IME、Windows build bundle 與 `warp-cloud-agent-removal` patches。
 2. 重新套用 `settings-zh-tw`。
 3. 搜尋 `localize_settings_text` 與 `settings_zh_tw_text`，補上 upstream 新增的 Settings 通用字串。
-4. 搜尋 `LOCAL-PATCH(settings-zh-tw)`，確認 Windows UI font 優先順序仍適用。
+4. 搜尋 `LOCAL-PATCH(settings-zh-tw)`，確認 Windows UI font 仍以 `Segoe UI` 為主，並預載 CJK fallback 字體。
 5. 搜尋新增或改名的 `app/src/settings_view/*` 檔案，盤點可見 Settings 頁是否有新增英文文案。
 6. 重新 build 並手動檢查 Settings 中文顯示。
